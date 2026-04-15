@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inove Play | Tabela Brasileirão</title>
+    <style>
+        :root { --primary: #e50914; --bg: #0b0b0b; --card: #141414; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 900px; background: var(--card); border-radius: 15px; padding: 25px; border: 1px solid #222; box-shadow: 0 15px 35px rgba(0,0,0,0.7); }
+        h1 { color: var(--primary); text-align: center; text-transform: uppercase; letter-spacing: 3px; margin: 0; }
+        .subtitle { text-align: center; color: #666; font-size: 12px; margin-bottom: 25px; text-transform: uppercase; }
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 500px; }
+        th { background: #1a1a1a; color: var(--primary); padding: 12px; text-align: left; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #333; }
+        td { padding: 12px; border-bottom: 1px solid #222; font-size: 14px; color: #ddd; }
+        /* Bordas de Classificação */
+        tr:nth-child(-n+4) td:first-child { border-left: 5px solid #00ff00; padding-left: 15px; } 
+        tr:nth-last-child(-n+4) td:first-child { border-left: 5px solid #ff4444; padding-left: 15px; }
+        .pg { font-weight: bold; color: var(--primary); background: rgba(229, 9, 20, 0.05); }
+        .loader { text-align: center; padding: 40px; color: #555; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>BRASILEIRÃO 2026</h1>
+    <div class="subtitle">Sincronização Automática | Inove Play</div>
+    <div id="loading" class="loader">Conectando à base de dados...</div>
+    <div class="table-wrapper">
+        <table id="tabela-futebol" style="display:none;">
+            <thead>
+                <tr>
+                    <th>Times</th>
+                    <th>PG</th>
+                    <th>J</th>
+                    <th>V</th>
+                    <th>E</th>
+                </tr>
+            </thead>
+            <tbody id="corpo-tabela"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const LINK_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTRRBFFO-rVhB2NwC8gupCq--S2x_IvlgenVTE3w0OLkjibGaZXXMt-IXuA1y1XcDIAzSy7NK0tLAvN/pub?output=csv";
+
+    // Função para processar o texto e montar a tabela
+    function montarTabela(csvText) {
+        const linhas = csvText.split('\n').map(l => l.split(',').map(c => c.replace(/"/g, '').trim()));
+        const corpo = document.getElementById('corpo-tabela');
+        corpo.innerHTML = "";
+
+        for (let i = 1; i < linhas.length; i++) {
+            const col = linhas[i];
+            if (col[0] && col[0].length > 1) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color:white; font-weight:500;">${col[0]}</td>
+                    <td class="pg">${col[1] || '0'}</td>
+                    <td>${col[2] || '0'}</td>
+                    <td>${col[3] || '0'}</td>
+                    <td>${col[4] || '0'}</td>
+                `;
+                corpo.appendChild(tr);
+            }
+        }
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('tabela-futebol').style.display = 'table';
+    }
+
+    // Tentativa 1: Fetch Direto (Funciona em sites hospedados)
+    async function carregarDados() {
+        try {
+            const res = await fetch(LINK_CSV);
+            if(res.ok) {
+                const text = await res.ok();
+                montarTabela(text);
+            } else { throw new Error(); }
+        } catch (e) {
+            // Tentativa 2: Proxy AllOrigins (Funciona abrindo direto do PC/Desktop)
+            console.log("Tentando via Proxy...");
+            fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(LINK_CSV)}`)
+                .then(response => response.json())
+                .then(data => montarTabela(data.contents))
+                .catch(err => {
+                    document.getElementById('loading').innerHTML = "Erro ao sincronizar. Abra o arquivo no navegador (Edge ou Chrome) e verifique sua internet.";
+                });
+        }
+    }
+
+    carregarDados();
+</script>
+</body>
+</html>
