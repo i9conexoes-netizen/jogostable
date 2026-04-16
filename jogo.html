@@ -12,7 +12,7 @@
         label { display: block; margin-bottom: 5px; font-size: 11px; color: #888; text-transform: uppercase; }
         input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #0c1221; color: white; outline: none; box-sizing: border-box; }
         #listaJogos { background: #0c1221; border: 1px solid #333; border-radius: 8px; max-height: 250px; overflow-y: auto; margin-bottom: 15px; display: none; }
-        .jogo-item { padding: 12px; border-bottom: 1px solid #222; cursor: pointer; font-size: 13px; }
+        .jogo-item { padding: 12px; border-bottom: 1px solid #222; cursor: pointer; font-size: 13px; line-height: 1.4; }
         .jogo-item:hover { background: #25d36633; }
         .btn-buscar { width: 100%; padding: 15px; background: #25d366; color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-bottom: 10px; }
         .btn-download { width: 100%; padding: 15px; background: #e50914; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
@@ -26,7 +26,7 @@
     <div class="container">
         <div class="controls">
             <div class="input-group">
-                <label>Selecione o Campeonato</label>
+                <label>Campeonato</label>
                 <select id="ligaId">
                     <option value="325">Brasileirão Série A 🇧🇷</option>
                     <option value="390">Brasileirão Série B 🇧🇷</option>
@@ -55,25 +55,28 @@
     </div>
 
 <script>
-    // Usando sua chave do print
+    // Sua chave ativa do print
     const API_KEY = "5dd6afbd32msh17e6d58715bd39ep1a81f3jsn1308b02cc4e6";
     const canvas = document.getElementById('jogoCanvas');
     const ctx = canvas.getContext('2d');
     canvas.width = 1080; canvas.height = 1920;
 
-    const imgBack = new Image(); imgBack.crossOrigin = "anonymous"; imgBack.src = "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=1080";
-    const imgInove = new Image(); imgInove.crossOrigin = "anonymous"; imgInove.src = "https://i.imgur.com/lhhqACi.png";
+    const BACK_URL = "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=1080";
+    const LOGO_URL = "https://i.imgur.com/lhhqACi.png";
+    
+    const imgBack = new Image(); imgBack.crossOrigin = "anonymous"; imgBack.src = BACK_URL;
+    const imgInove = new Image(); imgInove.crossOrigin = "anonymous"; imgInove.src = LOGO_URL;
 
     let jogoAtivo = null;
 
     document.getElementById('btnBuscar').onclick = async () => {
         const lista = document.getElementById('listaJogos');
         const ligaId = document.getElementById('ligaId').value;
-        lista.innerHTML = "<p style='padding:10px'>Buscando partidas...</p>";
+        lista.innerHTML = "<p style='padding:10px'>Conectando ao Sofascore...</p>";
         lista.style.display = "block";
 
-        const d = new Date();
-        const hoje = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+        // Formata data correta para a API (YYYY-MM-DD)
+        const hoje = new Date().toISOString().split('T')[0];
 
         try {
             const response = await fetch(`https://sofascore.p.rapidapi.com/matches/list-by-date?date=${hoje}`, {
@@ -84,18 +87,21 @@
                 }
             });
 
+            if (!response.ok) throw new Error("Falha na Chave");
+            
             const data = await response.json();
             lista.innerHTML = "";
 
-            if (!data.events) {
-                lista.innerHTML = "<p style='padding:10px'>Erro ao carregar dados. Tente novamente.</p>";
+            if (!data.events || data.events.length === 0) {
+                lista.innerHTML = "<p style='padding:10px'>Nenhum jogo encontrado para hoje.</p>";
                 return;
             }
 
+            // Filtro por Liga
             const jogos = data.events.filter(e => e.tournament.uniqueTournament.id == ligaId);
 
             if (jogos.length === 0) {
-                lista.innerHTML = "<p style='padding:10px; color: #ffc107;'>Nenhum jogo nesta liga hoje.</p>";
+                lista.innerHTML = "<p style='padding:10px; color: #ffc107;'>Sem jogos nesta liga hoje.</p>";
                 return;
             }
 
@@ -103,7 +109,7 @@
                 const div = document.createElement('div');
                 div.className = "jogo-item";
                 const hora = new Date(j.startTimestamp * 1000).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-                div.innerHTML = `<b>${j.homeTeam.name} x ${j.awayTeam.name}</b><br><small>${hora} - ${j.tournament.name}</small>`;
+                div.innerHTML = `<b>${j.homeTeam.name} x ${j.awayTeam.name}</b><br><small>${j.tournament.name} • ${hora}</small>`;
                 div.onclick = () => {
                     jogoAtivo = { casa: j.homeTeam.name, fora: j.awayTeam.name, hora: hora, campeonato: j.tournament.name };
                     desenhar();
@@ -112,7 +118,7 @@
                 lista.appendChild(div);
             });
         } catch (error) {
-            lista.innerHTML = "<p style='padding:10px; color:red;'>Erro de Conexão. Verifique sua chave ou limite.</p>";
+            lista.innerHTML = `<p style='padding:10px; color:red;'>Erro: Verifique se o plano FREE está ativo no RapidAPI.</p>`;
         }
     };
 
@@ -125,47 +131,56 @@
 
         if (!jogoAtivo) {
             ctx.fillStyle = "#fff"; ctx.font = "40px sans-serif"; ctx.textAlign = "center";
-            ctx.fillText("Escolha um jogo na lista ao lado", 540, 960);
+            ctx.fillText("Escolha um jogo ao lado", 540, 960);
             return;
         }
 
+        const cor = "#25d366";
+        const empresa = document.getElementById('inputEmpresa').value.toUpperCase();
+        const canais = document.getElementById('inputCanais').value || "CANAIS IPTV";
+
         ctx.textAlign = "center";
-        ctx.fillStyle = "#25d366";
+        
+        // Liga
+        ctx.fillStyle = cor;
         ctx.font = "bold 50px sans-serif";
         ctx.fillText(jogoAtivo.campeonato.toUpperCase(), 540, 250);
 
+        // Confronto
         ctx.fillStyle = "#fff";
         ctx.font = "bold 95px sans-serif";
         ctx.fillText(jogoAtivo.casa.toUpperCase(), 540, 520);
-        ctx.fillStyle = "#25d366";
-        ctx.font = "italic bold 130px sans-serif";
+        ctx.fillStyle = cor;
+        ctx.font = "italic bold 120px sans-serif";
         ctx.fillText("VS", 540, 650);
         ctx.fillStyle = "#fff";
         ctx.font = "bold 95px sans-serif";
         ctx.fillText(jogoAtivo.fora.toUpperCase(), 540, 780);
 
-        ctx.fillStyle = "rgba(255,255,255,0.1)";
+        // Info Box
+        ctx.fillStyle = "rgba(255,255,255,0.08)";
         ctx.beginPath(); ctx.roundRect(100, 950, 880, 420, 40); ctx.fill();
 
-        ctx.fillStyle = "#25d366";
+        ctx.fillStyle = cor;
         ctx.font = "bold 55px sans-serif";
         ctx.fillText("HORÁRIO DO JOGO", 540, 1030);
         ctx.fillStyle = "#fff";
-        ctx.font = "bold 160px sans-serif";
+        ctx.font = "bold 150px sans-serif";
         ctx.fillText(jogoAtivo.hora, 540, 1160);
 
-        ctx.fillStyle = "#25d366";
+        ctx.fillStyle = cor;
         ctx.font = "bold 55px sans-serif";
         ctx.fillText("TRANSMISSÃO", 540, 1260);
         ctx.fillStyle = "#fff";
         ctx.font = "bold 65px sans-serif";
-        ctx.fillText(document.getElementById('inputCanais').value || "CANAIS IPTV", 540, 1330);
+        ctx.fillText(canais, 540, 1330);
 
+        // Rodapé
         ctx.font = "bold 50px sans-serif";
-        ctx.fillText("Assista com a melhor qualidade na", 540, 1580);
-        ctx.fillStyle = "#25d366";
+        ctx.fillText("Assista com a melhor imagem na", 540, 1580);
+        ctx.fillStyle = cor;
         ctx.font = "bold 110px sans-serif";
-        ctx.fillText(document.getElementById('inputEmpresa').value.toUpperCase(), 540, 1690);
+        ctx.fillText(empresa, 540, 1690);
 
         if (imgInove.complete) ctx.drawImage(imgInove, 340, 1750, 400, 130);
     }
@@ -175,11 +190,11 @@
     imgBack.onload = desenhar;
 
     document.getElementById('btnDownload').onclick = () => {
-        if(!jogoAtivo) return alert("Selecione um jogo!");
-        const a = document.createElement('a');
-        a.download = `Jogo_${jogoAtivo.casa}.png`;
-        a.href = canvas.toDataURL('image/png');
-        a.click();
+        if(!jogoAtivo) return alert("Selecione um jogo primeiro!");
+        const link = document.createElement('a');
+        link.download = `Inove_Jogo_${jogoAtivo.casa}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
     };
 </script>
 </body>
