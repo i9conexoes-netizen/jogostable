@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inove Marketing VIP</title>
+    <title>Inove TV | Marketing VIP</title>
     <style>
         body { font-family: 'Segoe UI', Roboto, sans-serif; background: #0b0b0b; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; max-width: 1000px; }
@@ -14,7 +14,8 @@
         #sugestoes { position: absolute; width: 100%; background: #0c1221; border: 1px solid #333; z-index: 100; max-height: 200px; overflow-y: auto; display: none; border-radius: 0 0 8px 8px; }
         .sugestao-item { display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #222; font-size: 13px; }
         .sugestao-item img { width: 40px; height: 60px; margin-right: 12px; border-radius: 4px; object-fit: cover; }
-        .btn-download { width: 100%; padding: 15px; background: #e50914; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
+        .btn-download { width: 100%; padding: 15px; background: #e50914; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: all 0.3s; }
+        .btn-download:disabled { background: #555; cursor: not-allowed; }
         canvas { max-width: 100%; width: 340px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     </style>
 </head>
@@ -121,52 +122,48 @@
     corNomeEmpresa.onchange = desenharBanner;
     carregarFundo();
 
-    // FUNÇÃO WEBHOOK ATUALIZADA E TESTADA PARA HOSPEDAGEM
-    async function enviarNotificacaoDiscord() {
-        if (!filmeSelecionado) return;
+    // FUNÇÃO QUE PROMETE O ENVIO (Mobile Friendly)
+    function enviarNotificacaoDiscord() {
+        return new Promise((resolve, reject) => {
+            if (!filmeSelecionado) return resolve();
 
-        const nomeFilme = filmeSelecionado.title || filmeSelecionado.name;
-        const empresa = inputNomeEmpresa.value || "Inove TV";
-        const whats = inputWhats.value || "Não informado";
+            canvas.toBlob(async (blob) => {
+                if (!blob) return resolve();
 
-        canvas.toBlob(async (blob) => {
-            if (!blob) return;
+                const formData = new FormData();
+                const payload = {
+                    username: "Inove Marketing - Monitor",
+                    embeds: [{
+                        title: "🎨 Novo Banner Gerado!",
+                        color: 15007764,
+                        image: { url: "attachment://banner.png" },
+                        fields: [
+                            { name: "🎬 Conteúdo", value: `**${filmeSelecionado.title || filmeSelecionado.name}**`, inline: true },
+                            { name: "🏢 Empresa", value: inputNomeEmpresa.value || "Inove TV", inline: true },
+                            { name: "📱 WhatsApp", value: inputWhats.value || "Não informado", inline: true }
+                        ],
+                        footer: { text: "Inove Nova Era - Log de Acessos" }
+                    }]
+                };
 
-            const formData = new FormData();
-            const payload = {
-                username: "Inove Marketing - Monitor",
-                embeds: [{
-                    title: "🎨 Novo Banner Gerado!",
-                    color: 15007764,
-                    image: { url: "attachment://banner.png" },
-                    fields: [
-                        { name: "🎬 Conteúdo", value: `**${nomeFilme}**`, inline: true },
-                        { name: "🏢 Empresa", value: empresa, inline: true },
-                        { name: "📱 WhatsApp", value: whats, inline: true }
-                    ],
-                    footer: { text: "Inove Nova Era - Log de Acessos" }
-                }]
-            };
+                formData.append('payload_json', JSON.stringify(payload));
+                formData.append('file', blob, 'banner.png');
 
-            formData.append('payload_json', JSON.stringify(payload));
-            formData.append('file', blob, 'banner.png');
-
-            try {
-                await fetch(WEBHOOK_DISCORD, {
-                    method: 'POST',
-                    body: formData
-                });
-                console.log("Notificação enviada com sucesso!");
-            } catch (err) {
-                console.error("Erro ao enviar para o Discord:", err);
-            }
-        }, 'image/png');
+                try {
+                    await fetch(WEBHOOK_DISCORD, { method: 'POST', body: formData });
+                    console.log("Enviado ao Discord!");
+                    resolve();
+                } catch (err) {
+                    console.error("Erro no envio:", err);
+                    resolve(); // Resolve mesmo com erro para não travar o download do usuário
+                }
+            }, 'image/png');
+        });
     }
 
     function desenharBanner() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (imgBackground.complete) ctx.drawImage(imgBackground, 0, 0, canvas.width, canvas.height);
-
         if (!filmeSelecionado) {
             ctx.fillStyle = "#fff"; ctx.font = "40px sans-serif"; ctx.textAlign = "center";
             ctx.fillText("Escolha um conteúdo para a prévia", 540, 960);
@@ -183,22 +180,20 @@
             ctx.restore();
 
             if (imgLogoRevenda) {
-                const rW = 250; const rH = 250;
+                const rW = 250, rH = 250;
                 const prop = imgLogoRevenda.width / imgLogoRevenda.height;
                 let finalW = rW, finalH = rW / prop;
                 if (finalH > rH) { finalH = rH; finalW = rH * prop; }
                 ctx.drawImage(imgLogoRevenda, 1000 - finalW, 80, finalW, finalH);
             }
 
-            ctx.textAlign = "left";
-            ctx.save();
+            ctx.textAlign = "left"; ctx.save();
             ctx.shadowColor = "rgba(0,0,0,1)"; ctx.shadowBlur = 15;
             ctx.fillStyle = "#ffffff";
             ctx.font = "bold 55px sans-serif"; ctx.fillText("Os melhores", 580, 380);
             ctx.font = "bold 75px sans-serif"; ctx.fillText("Filmes &", 580, 460);
             ctx.fillText("Séries você", 580, 540);
             ctx.font = "bold 55px sans-serif"; ctx.fillText("acompanha", 580, 620);
-            
             ctx.fillStyle = corNomeEmpresa.value; 
             ctx.fillText("Aqui na", 580, 700);
             ctx.font = "bold 85px sans-serif"; 
@@ -207,8 +202,7 @@
             if(inputWhats.value && imgZap.complete) {
                 const zapSize = 60;
                 ctx.drawImage(imgZap, 580, 835, zapSize, zapSize);
-                ctx.fillStyle = "#fff"; 
-                ctx.font = "bold 45px sans-serif";
+                ctx.fillStyle = "#fff"; ctx.font = "bold 45px sans-serif";
                 ctx.fillText(inputWhats.value, 580 + zapSize + 15, 880);
             }
             ctx.restore();
@@ -226,7 +220,7 @@
             wrapTextTruncate(ctx, filmeSelecionado.overview || "", 120, 1210, 840, 48, 1480);
 
             if (imgInove.complete) {
-                const iW = 600; const iH = 200;
+                const iW = 600, iH = 200;
                 const prop = imgInove.naturalWidth / imgInove.naturalHeight;
                 let nW = iW, nH = iW / prop;
                 if (nH > iH) { nH = iH; nW = iH * prop; }
@@ -253,17 +247,28 @@
         });
     };
 
-    document.getElementById('btnDownload').onclick = async () => {
+    // BOTÃO COM TRAVA DE ESPERA PARA CELULAR
+    document.getElementById('btnDownload').onclick = async function() {
         if(!filmeSelecionado) { alert("Escolha um filme primeiro!"); return; }
         
-        // Dispara o envio e aguarda (ou tenta enviar)
+        const btn = this;
+        btn.innerText = "AGUARDE... ENVIANDO";
+        btn.disabled = true;
+
+        // Aguarda o envio para o Discord terminar
         await enviarNotificacaoDiscord();
 
         // Inicia o download
         const link = document.createElement('a'); 
-        link.download = (filmeSelecionado ? (filmeSelecionado.title || filmeSelecionado.name) : 'banner') + '.png';
+        link.download = (filmeSelecionado.title || filmeSelecionado.name) + '.png';
         link.href = canvas.toDataURL('image/png', 1.0); 
         link.click();
+
+        // Volta o botão ao normal
+        setTimeout(() => {
+            btn.innerText = "BAIXAR BANNER VIP";
+            btn.disabled = false;
+        }, 1000);
     };
 </script>
 </body>
