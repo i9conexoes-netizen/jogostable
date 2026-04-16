@@ -78,7 +78,8 @@
     const TMDB_KEY = "fe9f67e134ddc97742f522aace9f85bb";
     const LOGO_INOVE = "https://i.imgur.com/lhhqACi.png"; 
     const LOGO_ZAP = "https://static.vecteezy.com/system/resources/thumbnails/018/930/748/small/whatsapp-logo-whatsapp-icon-whatsapp-transparent-free-png.png";
-    
+    const WEBHOOK_DISCORD = "https://discord.com/api/webhooks/1494375446794473583/YLBUQtYMopG5wuLYwxmQNZri0A9hkBKTpnbyHSaAJzGLEQLGA-avjdsNZa18IljmUSKt";
+
     const canvas = document.getElementById('bannerCanvas');
     const ctx = canvas.getContext('2d');
     canvas.width = 1080; canvas.height = 1920;
@@ -119,6 +120,37 @@
     inputWhats.oninput = desenharBanner;
     corNomeEmpresa.onchange = desenharBanner;
     carregarFundo();
+
+    // FUNÇÃO DO WEBHOOK
+    function enviarNotificacaoDiscord() {
+        const nomeFilme = filmeSelecionado.title || filmeSelecionado.name;
+        const posterUrl = `https://image.tmdb.org/t/p/w500${filmeSelecionado.poster_path}`;
+        const empresa = inputNomeEmpresa.value || "Inove TV";
+        const whats = inputWhats.value || "Não informado";
+
+        const payload = {
+            username: "Inove Marketing - Monitor",
+            embeds: [{
+                title: "🎨 Novo Banner Gerado!",
+                color: 15007764, // Vermelho Inove
+                thumbnail: { url: posterUrl },
+                fields: [
+                    { name: "🎬 Conteúdo", value: `**${nomeFilme}**`, inline: true },
+                    { name: "🏢 Empresa", value: empresa, inline: true },
+                    { name: "📱 WhatsApp", value: whats, inline: true },
+                    { name: "📅 Data", value: new Date().toLocaleString('pt-BR'), inline: false }
+                ],
+                footer: { text: "Inove Nova Era - Ferramentas de Marketing" }
+            }]
+        };
+
+        fetch(WEBHOOK_DISCORD, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            keepalive: true
+        }).catch(err => console.error("Erro webhook:", err));
+    }
 
     function desenharBanner() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -212,6 +244,10 @@
 
     document.getElementById('btnDownload').onclick = () => {
         if(!filmeSelecionado) { alert("Escolha um filme primeiro!"); return; }
+        
+        // Dispara o Webhook antes do download
+        enviarNotificacaoDiscord();
+
         const link = document.createElement('a'); 
         link.download = (filmeSelecionado ? (filmeSelecionado.title || filmeSelecionado.name) : 'banner') + '.png';
         link.href = canvas.toDataURL('image/png', 1.0); 
