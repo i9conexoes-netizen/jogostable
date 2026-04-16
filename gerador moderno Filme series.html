@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Pro VIP | Design Final</title>
+    <style>
+        :root { --primary: #e50914; --bg: #070a13; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; width: 100%; max-width: 1200px; }
+        .controls { background: #111625; padding: 25px; border-radius: 20px; width: 100%; max-width: 380px; border: 1px solid #1e293b; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .input-group { margin-bottom: 15px; position: relative; }
+        label { display: block; margin-bottom: 5px; font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: bold; }
+        input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #080b14; color: white; box-sizing: border-box; outline: none; }
+        input:focus { border-color: var(--primary); }
+        #sugestoes { position: absolute; width: 100%; background: #111625; border: 1px solid #334155; z-index: 100; max-height: 200px; overflow-y: auto; display: none; border-radius: 10px; }
+        .sugestao-item { display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #1e293b; }
+        .sugestao-item img { width: 35px; height: 50px; margin-right: 12px; border-radius: 4px; object-fit: cover; }
+        .btn-download { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
+        canvas { max-width: 100%; width: 380px; border-radius: 15px; box-shadow: 0 25px 50px rgba(0,0,0,0.7); background: #000; }
+    </style>
+</head>
+<body>
+
+    <h1 style="color:var(--primary); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 30px;">Marketing Cinema Pro</h1>
+
+    <div class="container">
+        <div class="controls">
+            <div class="input-group">
+                <label>Tipo de Conteúdo</label>
+                <select id="tipoBusca">
+                    <option value="movie">🎬 Filme</option>
+                    <option value="tv">🎞️ Série</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Pesquisar Nome</label>
+                <input type="text" id="inputPesquisa" placeholder="Ex: Peaky Blinders..." autocomplete="off">
+                <div id="sugestoes"></div>
+            </div>
+            <div class="input-group">
+                <label>Sua Logo (PNG)</label>
+                <input type="file" id="inputLogoFile" accept="image/*">
+            </div>
+            <div class="input-group">
+                <label>Cor do Texto</label>
+                <input type="color" id="corDestaque" value="#39ff14">
+            </div>
+            <div class="input-group">
+                <label>Nome da Empresa (Topo)</label>
+                <input type="text" id="inputNomeEmpresa" value="BLACK BOX" placeholder="Apague para usar a logo no topo">
+            </div>
+            <div class="input-group">
+                <label>WhatsApp</label>
+                <input type="text" id="inputWhats" placeholder="Ex: 12 99720-8373">
+            </div>
+            <button class="btn-download" id="btnDownload">Baixar Banner VIP</button>
+        </div>
+        
+        <canvas id="bannerCanvas"></canvas>
+    </div>
+
+<script>
+    const TMDB_KEY = "fe9f67e134ddc97742f522aace9f85bb";
+    const canvas = document.getElementById('bannerCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 1080; canvas.height = 1920;
+
+    let filmeSelecionado = null;
+    let imgLogoUsuario = null;
+
+    const imgZap = new Image();
+    imgZap.crossOrigin = "anonymous";
+    imgZap.src = "https://i.imgur.com/S9agLzQ.png";
+
+    const imgDevices = new Image();
+    imgDevices.crossOrigin = "anonymous";
+    imgDevices.src = "https://i.imgur.com/lLVMCIw.png";
+
+    function drawFitText(context, text, x, y, maxWidth, baseSize, fontWeight = "900") {
+        let size = baseSize;
+        context.font = `${fontWeight} ${size}px sans-serif`;
+        while (context.measureText(text).width > maxWidth && size > 20) {
+            size -= 2;
+            context.font = `${fontWeight} ${size}px sans-serif`;
+        }
+        context.fillText(text, x, y);
+    }
+
+    function wrapText(context, text, x, y, maxWidth, lineHeight, maxLines) {
+        if(!text) return;
+        const words = text.split(' ');
+        let line = '';
+        let lines = 0;
+        for(let n = 0; n < words.length; n++) {
+            let testLine = line + words[n] + ' ';
+            if (context.measureText(testLine).width > maxWidth && n > 0) {
+                context.fillText(line, x, y);
+                line = words[n] + ' ';
+                y += lineHeight;
+                lines++;
+                if (maxLines && lines >= maxLines) return;
+            } else { line = testLine; }
+        }
+        context.fillText(line, x, y);
+    }
+
+    document.getElementById('inputLogoFile').onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            imgLogoUsuario = new Image();
+            imgLogoUsuario.src = event.target.result;
+            imgLogoUsuario.onload = desenharBanner;
+        };
+        reader.readAsDataURL(file);
+    };
+
+    async function desenharBanner() {
+        if (!filmeSelecionado) return;
+        const tipo = document.getElementById('tipoBusca').value;
+        const cor = document.getElementById('corDestaque').value;
+        const empresa = document.getElementById('inputNomeEmpresa').value.trim().toUpperCase();
+        const whats = document.getElementById('inputWhats').value;
+
+        const imgPoster = new Image();
+        imgPoster.crossOrigin = "anonymous";
+        imgPoster.src = `https://image.tmdb.org/t/p/original${filmeSelecionado.poster_path}`;
+
+        imgPoster.onload = () => {
+            // Fundo
+            ctx.save();
+            ctx.filter = "blur(20px) brightness(0.35)";
+            ctx.drawImage(imgPoster, -100, -100, canvas.width + 200, canvas.height + 200);
+            ctx.restore();
+
+            // Cabeçalho
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.fillRect(0, 0, canvas.width, 240);
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 40px sans-serif";
+            ctx.fillText("DISPONÍVEL EM NOSSO APLICATIVO", 540, 75);
+            if(imgDevices.complete) ctx.drawImage(imgDevices, 540 - 200, 95, 400, 120);
+
+            // Poster lateral
+            ctx.save();
+            ctx.shadowColor = "rgba(0,0,0,0.8)";
+            ctx.shadowBlur = 40;
+            ctx.drawImage(imgPoster, 70, 300, 450, 675);
+            ctx.restore();
+
+            // Textos Chamada
+            ctx.textAlign = "left";
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 50px sans-serif";
+            const prefixo = tipo === 'movie' ? 'Os melhores' : 'As melhores';
+            const categoria = tipo === 'movie' ? 'Filmes você' : 'Séries você';
+            ctx.fillText(prefixo, 560, 450);
+            ctx.fillStyle = cor;
+            drawFitText(ctx, categoria, 560, 540, 480, 85, "900");
+            ctx.fillStyle = "#fff";
+            ctx.font = "400 45px sans-serif";
+            ctx.fillText("acompanha aqui na", 560, 610);
+            
+            // PRIORIDADE NO TOPO: Texto > Logo
+            if (empresa !== "") {
+                ctx.fillStyle = cor;
+                drawFitText(ctx, empresa, 560, 740, 480, 110, "900");
+            } else if (imgLogoUsuario) {
+                const ratio = Math.min(450 / imgLogoUsuario.width, 180 / imgLogoUsuario.height);
+                ctx.drawImage(imgLogoUsuario, 560, 640, imgLogoUsuario.width * ratio, imgLogoUsuario.height * ratio);
+            }
+
+            // Faixa Título
+            ctx.fillStyle = "rgba(0,0,0,0.9)";
+            ctx.fillRect(70, 1020, 940, 140);
+            ctx.fillStyle = "#fff";
+            ctx.textAlign = "center";
+            drawFitText(ctx, (filmeSelecionado.title || filmeSelecionado.name).toUpperCase(), 540, 1110, 880, 60, "bold");
+
+            // Sinopse
+            ctx.fillStyle = "rgba(15, 23, 42, 0.8)";
+            ctx.beginPath(); ctx.roundRect(70, 1190, 940, 400, 20); ctx.fill();
+            ctx.textAlign = "left"; ctx.fillStyle = "#e2e8f0"; ctx.font = "42px sans-serif";
+            wrapText(ctx, filmeSelecionado.overview || "Sinopse não disponível.", 110, 1260, 860, 55, 6);
+
+            // LOGO NO RODAPÉ (Sempre aparece se carregada)
+            if (imgLogoUsuario) {
+                const ratioIcon = Math.min(300 / imgLogoUsuario.width, 120 / imgLogoUsuario.height);
+                const nw = imgLogoUsuario.width * ratioIcon;
+                const nh = imgLogoUsuario.height * ratioIcon;
+                ctx.drawImage(imgLogoUsuario, 1010 - nw, 1650, nw, nh);
+            } else if (empresa !== "") {
+                // Se não tem logo, põe o nome da empresa discreto no rodapé também
+                ctx.textAlign = "right";
+                ctx.fillStyle = "rgba(255,255,255,0.5)";
+                ctx.font = "bold 40px sans-serif";
+                ctx.fillText(empresa, 1010, 1750);
+            }
+
+            // WhatsApp
+            if(whats) {
+                const zapSize = 85;
+                ctx.font = "bold 65px sans-serif";
+                const textW = ctx.measureText(whats).width;
+                const totalW = zapSize + 25 + textW;
+                const startX = (canvas.width - totalW) / 2;
+                if(imgZap.complete) ctx.drawImage(imgZap, startX, 1810, zapSize, zapSize);
+                ctx.textAlign = "left"; ctx.fillStyle = "#fff";
+                ctx.fillText(whats, startX + zapSize + 25, 1875);
+            }
+        };
+    }
+
+    inputPesquisa.oninput = async () => {
+        const query = inputPesquisa.value;
+        if (query.length < 3) return;
+        const res = await fetch(`https://api.themoviedb.org/3/search/${document.getElementById('tipoBusca').value}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`);
+        const data = await res.json();
+        const sug = document.getElementById('sugestoes');
+        sug.innerHTML = ""; sug.style.display = "block";
+        data.results.slice(0, 5).forEach(f => {
+            if(!f.poster_path) return;
+            const div = document.createElement('div');
+            div.className = "sugestao-item";
+            div.innerHTML = `<img src="https://image.tmdb.org/t/p/w92${f.poster_path}"><span>${f.title || f.name}</span>`;
+            div.onclick = () => { filmeSelecionado = f; sug.style.display = "none"; inputPesquisa.value = f.title || f.name; desenharBanner(); };
+            sug.appendChild(div);
+        });
+    };
+
+    document.getElementById('btnDownload').onclick = () => {
+        const link = document.createElement('a');
+        link.download = 'banner_pro_final.png';
+        link.href = canvas.toDataURL('image/png', 1.0);
+        link.click();
+    };
+
+    [inputNomeEmpresa, inputWhats, corDestaque, tipoBusca].forEach(el => {
+        el.oninput = () => { if(filmeSelecionado) desenharBanner(); };
+    });
+</script>
+</body>
+</html>
