@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inove TV | Trailers Dublados VIP</title>
+    <title>Inove TV | Gerador de Vídeo VIP</title>
     <style>
         body { font-family: 'Segoe UI', Roboto, sans-serif; background: #0b0b0b; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; max-width: 1000px; }
@@ -36,81 +36,43 @@
             z-index: 5;
             overflow: hidden;
         }
-        iframe { width: 100%; height: 100%; border: none; }
+        video, iframe { width: 100%; height: 100%; border: none; }
 
-        .txt-container { 
-            position: absolute; 
-            top: 290px; 
-            left: 20px; 
-            width: 300px; 
-        }
+        .txt-container { position: absolute; top: 290px; left: 20px; width: 300px; }
         .txt-melhores { font-size: 15px; font-weight: bold; margin: 0; line-height: 1.2; text-shadow: 2px 2px 4px #000; }
         .txt-aqui { color: #e50914; font-size: 18px; font-weight: bold; margin: 5px 0 0 0; text-shadow: 2px 2px 4px #000; }
-        .txt-empresa { 
-            color: #e50914; 
-            font-size: 28px; 
-            font-weight: bold; 
-            margin: 0; 
-            text-transform: uppercase; 
-            word-wrap: break-word; 
-            line-height: 1;
-            text-shadow: 2px 2px 4px #000;
-        }
+        .txt-empresa { color: #e50914; font-size: 28px; font-weight: bold; margin: 0; text-transform: uppercase; line-height: 1; text-shadow: 2px 2px 4px #000; word-wrap: break-word; }
 
-        .sinopse-box {
-            position: absolute;
-            top: 415px;
-            left: 20px;
-            width: 300px;
-            height: 105px;
-            background: rgba(15, 23, 42, 0.9);
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 11px;
-            color: #cbd5e1;
-            overflow: hidden;
-            line-height: 1.4;
-        }
+        .sinopse-box { position: absolute; top: 415px; left: 20px; width: 300px; height: 105px; background: rgba(15, 23, 42, 0.9); padding: 10px; border-radius: 8px; font-size: 11px; color: #cbd5e1; overflow: hidden; line-height: 1.4; }
+        .logo-footer { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 160px; }
 
-        .logo-footer {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 160px;
-        }
-
-        .btn-download { width: 100%; padding: 15px; background: #25d366; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 15px; display: block; text-align: center; text-decoration: none; font-size: 12px; }
+        .btn-download { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 15px; display: block; text-align: center; text-decoration: none; }
         #sugestoes { position: absolute; width: 100%; background: #0c1221; z-index: 100; max-height: 200px; overflow-y: auto; display: none; border: 1px solid #333; }
         .sugestao-item { display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #222; }
     </style>
 </head>
 <body>
 
-    <h1 style="color:#e50914; text-transform: uppercase;">Inove Vídeo Marketing</h1>
+    <h1 style="color:#e50914;">Inove Vídeo Marketing</h1>
 
     <div class="container">
         <div class="controls">
             <div class="input-group">
                 <label>Tipo de Conteúdo</label>
-                <select id="tipoBusca">
-                    <option value="multi">Tudo (Filmes e Séries)</option>
-                    <option value="movie">Filmes</option>
-                    <option value="tv">Séries</option>
-                </select>
+                <select id="tipoBusca"><option value="multi">Tudo</option><option value="movie">Filmes</option><option value="tv">Séries</option></select>
             </div>
             <div class="input-group">
                 <label>Nome da Empresa</label>
                 <input type="text" id="inputNomeEmpresa" value="Inove TV">
             </div>
             <div class="input-group">
-                <label>Pesquisar Nome</label>
-                <input type="text" id="inputPesquisa" placeholder="Ex: Vingadores..." autocomplete="off">
+                <label>Pesquisar Filme/Série</label>
+                <input type="text" id="inputPesquisa" placeholder="Ex: Peaky Blinders..." autocomplete="off">
                 <div id="sugestoes"></div>
             </div>
             
-            <a href="#" class="btn-download" id="btnDownload" target="_blank" style="display:none;">📥 BAIXAR VÍDEO (SERVER 1)</a>
-            <a href="#" class="btn-download" id="btnDownload2" target="_blank" style="display:none; background:#007bff;">📥 BAIXAR VÍDEO (SERVER 2)</a>
+            <a href="#" class="btn-download" id="btnDownload" target="_blank" style="display:none;">📥 BAIXAR VÍDEO AGORA</a>
+            <p id="msgAviso" style="display:none; font-size: 10px; color: #aaa; margin-top: 5px; text-align: center;">Ao abrir o vídeo, clique nos 3 pontinhos e "Fazer Download" ou segure o dedo na tela.</p>
         </div>
 
         <div class="banner-preview" id="banner">
@@ -132,19 +94,16 @@
         const query = inputPesquisa.value;
         const tipo = document.getElementById('tipoBusca').value;
         if (query.length < 3) { document.getElementById('sugestoes').style.display = "none"; return; }
-        
         const res = await fetch(`https://api.themoviedb.org/3/search/${tipo}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`);
         const data = await res.json();
         const suggestions = document.getElementById('sugestoes');
         suggestions.innerHTML = ""; suggestions.style.display = "block";
-        
         data.results.slice(0, 5).forEach(f => {
             const div = document.createElement('div');
             div.className = "sugestao-item";
             const img = f.poster_path ? `https://image.tmdb.org/t/p/w92${f.poster_path}` : 'https://via.placeholder.com/92x138';
             const nome = f.title || f.name;
             const mediaType = f.media_type || (f.title ? 'movie' : 'tv');
-            
             div.innerHTML = `<img src="${img}" style="width:30px; margin-right:10px;"><span>${nome}</span>`;
             div.onclick = () => carregarTrailer(f.id, nome, f.overview, mediaType);
             suggestions.appendChild(div);
@@ -159,36 +118,27 @@
 
         const res = await fetch(`https://api.themoviedb.org/3/${tipo}/${id}/videos?api_key=${TMDB_KEY}&language=pt-BR`);
         const data = await res.json();
-        
-        // Prioriza Dublado
         let trailer = data.results.find(v => v.site === "YouTube" && (v.name.toLowerCase().includes("dublado") || v.name.toLowerCase().includes("oficial")));
         if (!trailer) trailer = data.results.find(v => v.site === "YouTube");
 
         if (trailer) {
-            document.getElementById('player').innerHTML = `
-                <iframe src="https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-            `;
+            // Player no banner (Iframe para visualização rápida)
+            document.getElementById('player').innerHTML = `<iframe src="https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1" allowfullscreen></iframe>`;
             
-            const youtubeUrl = `https://www.youtube.com/watch?v=${trailer.key}`;
+            // Link de Download Direto (Puxando o MP4 bruto do Invidious)
+            const videoId = trailer.key;
+            const downloadUrl = `https://invidious.snopyta.org/latest_version?id=${videoId}&itag=22`;
             
-            // Server 1: Truque do SS (abre o en.savefrom mas costuma burlar o bloqueio de DNS)
-            const btn1 = document.getElementById('btnDownload');
-            btn1.style.display = "block";
-            btn1.href = youtubeUrl.replace("youtube.com", "ssyoutube.com");
-
-            // Server 2: Snapsave (Geralmente funciona quando o outro cai)
-            const btn2 = document.getElementById('btnDownload2');
-            btn2.style.display = "block";
-            btn2.href = `https://snapsave.io/pt#url=${youtubeUrl}`;
-            
+            const btn = document.getElementById('btnDownload');
+            btn.style.display = "block";
+            btn.href = downloadUrl;
+            document.getElementById('msgAviso').style.display = "block";
         } else {
             alert("Trailer não encontrado.");
         }
     }
 
-    inputNomeEmpresa.oninput = () => {
-        document.getElementById('bannerEmpresa').innerText = inputNomeEmpresa.value;
-    };
+    inputNomeEmpresa.oninput = () => { document.getElementById('bannerEmpresa').innerText = inputNomeEmpresa.value; };
 </script>
 </body>
 </html>
