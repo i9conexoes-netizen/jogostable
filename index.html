@@ -2,89 +2,72 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inove Play | Tabela Brasileirão</title>
+    <title>Inove Play | Próximos Jogos</title>
     <style>
-        :root { --primary: #e50914; --bg: #0b0b0b; --card: #141414; }
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 900px; background: var(--card); border-radius: 15px; padding: 25px; border: 1px solid #222; box-shadow: 0 15px 35px rgba(0,0,0,0.7); }
-        h1 { color: var(--primary); text-align: center; text-transform: uppercase; letter-spacing: 3px; margin: 0; }
-        .subtitle { text-align: center; color: #666; font-size: 12px; margin-bottom: 25px; text-transform: uppercase; }
-        .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 500px; }
-        th { background: #1a1a1a; color: var(--primary); padding: 12px; text-align: left; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #333; }
-        td { padding: 12px; border-bottom: 1px solid #222; font-size: 14px; color: #ddd; }
-        tr:nth-child(-n+4) td:first-child { border-left: 5px solid #00ff00; padding-left: 15px; } 
-        tr:nth-last-child(-n+4) td:first-child { border-left: 5px solid #ff4444; padding-left: 15px; }
-        .pg { font-weight: bold; color: var(--primary); background: rgba(229, 9, 20, 0.05); }
-        .loader { text-align: center; padding: 40px; color: #555; font-style: italic; }
+        :root { --primary: #e50914; --bg: #0b0b0b; --card: #1a1a1a; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 600px; }
+        h1 { color: var(--primary); text-transform: uppercase; text-align: center; letter-spacing: 2px; }
+        
+        .jogo-card { 
+            background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            border: 1px solid #333; transition: 0.3s;
+        }
+        .jogo-card:hover { border-color: var(--primary); transform: scale(1.02); }
+        
+        .time { flex: 1; text-align: center; font-weight: bold; font-size: 16px; }
+        .vs { padding: 0 15px; color: var(--primary); font-weight: 900; font-size: 14px; }
+        
+        .info-rodada { text-align: center; font-size: 12px; color: #666; margin-bottom: 10px; text-transform: uppercase; }
+        .loader { text-align: center; padding: 50px; color: #444; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>BRASILEIRÃO 2026</h1>
-    <div class="subtitle">Sincronização Online | Inove Play</div>
-    <div id="loading" class="loader">Sincronizando com Google Sheets...</div>
-    <div class="table-wrapper">
-        <table id="tabela-futebol" style="display:none;">
-            <thead>
-                <tr>
-                    <th>Times</th>
-                    <th>PG</th>
-                    <th>J</th>
-                    <th>V</th>
-                    <th>E</th>
-                </tr>
-            </thead>
-            <tbody id="corpo-tabela"></tbody>
-        </table>
-    </div>
+    <h1>Próximos Confrontos</h1>
+    <div id="loading" class="loader">Buscando rodada atual...</div>
+    <div id="lista-jogos"></div>
 </div>
 
 <script>
-    // Link CSV limpo
     const LINK_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTRRBFFO-rVhB2NwC8gupCq--S2x_IvlgenVTE3w0OLkjibGaZXXMt-IXuA1y1XcDIAzSy7NK0tLAvN/pub?output=csv";
 
-    async function carregarDados() {
+    async function carregarJogos() {
         try {
-            // Fetch direto (funciona porque o site agora está online)
-            const res = await fetch(LINK_CSV);
-            if (!res.ok) throw new Error("Erro ao baixar planilha");
+            const res = await fetch(LINK_CSV + "&t=" + new Date().getTime());
+            const text = await res.text();
+            const linhas = text.split('\n').map(l => l.split(',').map(c => c.replace(/"/g, '').trim()));
             
-            const csvText = await res.text();
-            
-            // Processa o CSV
-            const linhas = csvText.split('\n').map(l => l.split(',').map(c => c.replace(/"/g, '').trim()));
-            const corpo = document.getElementById('corpo-tabela');
-            corpo.innerHTML = "";
+            const lista = document.getElementById('lista-jogos');
+            lista.innerHTML = "";
 
-            for (let i = 1; i < linhas.length; i++) {
-                const col = linhas[i];
-                // Verifica se tem nome do time
-                if (col[0] && col[0].length > 1) {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td style="color:white; font-weight:500;">${col[0]}</td>
-                        <td class="pg">${col[1] || '0'}</td>
-                        <td>${col[2] || '0'}</td>
-                        <td>${col[3] || '0'}</td>
-                        <td>${col[4] || '0'}</td>
+            // O código abaixo pula as linhas de título e tenta achar onde tem " x " ou confrontos
+            linhas.forEach(col => {
+                if (col.length >= 2 && col[1].toLowerCase().includes('x') || col.length >= 3) {
+                    // Ajuste aqui conforme a ordem que aparecer na sua planilha (Ex: Coluna A vs Coluna C)
+                    const timeA = col[0];
+                    const timeB = col[2] || col[1].split('x')[1] || "A definir";
+                    
+                    const card = document.createElement('div');
+                    card.className = "jogo-card";
+                    card.innerHTML = `
+                        <div class="time">${timeA}</div>
+                        <div class="vs">VS</div>
+                        <div class="time">${timeB}</div>
                     `;
-                    corpo.appendChild(tr);
+                    lista.appendChild(card);
                 }
-            }
+            });
 
             document.getElementById('loading').style.display = 'none';
-            document.getElementById('tabela-futebol').style.display = 'table';
-
         } catch (e) {
-            console.error(e);
-            document.getElementById('loading').innerHTML = "Erro ao carregar dados. Verifique se a planilha está 'Publicada na Web' como CSV.";
+            document.getElementById('loading').innerHTML = "Erro ao carregar jogos.";
         }
     }
 
-    carregarDados();
+    carregarJogos();
 </script>
 </body>
 </html>
