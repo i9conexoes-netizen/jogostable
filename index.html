@@ -2,32 +2,39 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Inove Play | Próximos Jogos</title>
+    <title>Inove Play | Guia de Jogos</title>
     <style>
-        :root { --primary: #e50914; --bg: #0b0b0b; --card: #1a1a1a; }
+        :root { --primary: #e50914; --bg: #0b0b0b; --card: #141414; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 600px; }
-        h1 { color: var(--primary); text-transform: uppercase; text-align: center; letter-spacing: 2px; }
+        h1 { color: var(--primary); text-transform: uppercase; text-align: center; letter-spacing: 2px; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #666; font-size: 12px; margin-bottom: 30px; }
         
         .jogo-card { 
-            background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid #333; transition: 0.3s;
+            background: var(--card); border-radius: 15px; padding: 20px; margin-bottom: 20px;
+            border: 1px solid #222; position: relative; overflow: hidden;
         }
-        .jogo-card:hover { border-color: var(--primary); transform: scale(1.02); }
+        .jogo-card::before { content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); }
         
-        .time { flex: 1; text-align: center; font-weight: bold; font-size: 16px; }
-        .vs { padding: 0 15px; color: var(--primary); font-weight: 900; font-size: 14px; }
+        .confronto { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .time { flex: 1; text-align: center; font-weight: bold; font-size: 18px; text-transform: uppercase; }
+        .vs { padding: 0 10px; color: var(--primary); font-weight: 900; font-size: 12px; opacity: 0.7; }
         
-        .info-rodada { text-align: center; font-size: 12px; color: #666; margin-bottom: 10px; text-transform: uppercase; }
+        .detalhes { display: flex; justify-content: space-around; border-top: 1px solid #222; padding-top: 15px; }
+        .info-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #aaa; }
+        .info-item strong { color: #fff; }
+        
+        .badge-transmissao { background: rgba(229, 9, 20, 0.1); color: var(--primary); padding: 4px 10px; border-radius: 5px; border: 1px solid var(--primary); font-size: 11px; font-weight: bold; }
         .loader { text-align: center; padding: 50px; color: #444; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Próximos Confrontos</h1>
-    <div id="loading" class="loader">Buscando rodada atual...</div>
+    <h1>PROGRAMAÇÃO ESPORTIVA</h1>
+    <div class="subtitle">Onde assistir aos jogos de hoje | Inove Play</div>
+    
+    <div id="loading" class="loader">Carregando horários e canais...</div>
     <div id="lista-jogos"></div>
 </div>
 
@@ -36,34 +43,39 @@
 
     async function carregarJogos() {
         try {
-            const res = await fetch(LINK_CSV + "&t=" + new Date().getTime());
+            const res = await fetch(LINK_CSV + "&cache=" + new Date().getTime());
             const text = await res.text();
             const linhas = text.split('\n').map(l => l.split(',').map(c => c.replace(/"/g, '').trim()));
             
             const lista = document.getElementById('lista-jogos');
             lista.innerHTML = "";
 
-            // O código abaixo pula as linhas de título e tenta achar onde tem " x " ou confrontos
-            linhas.forEach(col => {
-                if (col.length >= 2 && col[1].toLowerCase().includes('x') || col.length >= 3) {
-                    // Ajuste aqui conforme a ordem que aparecer na sua planilha (Ex: Coluna A vs Coluna C)
-                    const timeA = col[0];
-                    const timeB = col[2] || col[1].split('x')[1] || "A definir";
-                    
+            // Começamos do 1 para pular o cabeçalho
+            for (let i = 1; i < linhas.length; i++) {
+                const col = linhas[i];
+                
+                // Se tiver pelo menos o nome dos dois times
+                if (col[0] && col[1]) {
                     const card = document.createElement('div');
                     card.className = "jogo-card";
                     card.innerHTML = `
-                        <div class="time">${timeA}</div>
-                        <div class="vs">VS</div>
-                        <div class="time">${timeB}</div>
+                        <div class="confronto">
+                            <div class="time">${col[0]}</div>
+                            <div class="vs">VS</div>
+                            <div class="time">${col[1]}</div>
+                        </div>
+                        <div class="detalhes">
+                            <div class="info-item">🕒 <strong>${col[2] || '--:--'}</strong></div>
+                            <div class="info-item">📺 <span class="badge-transmissao">${col[3] || 'A DEFINIR'}</span></div>
+                        </div>
                     `;
                     lista.appendChild(card);
                 }
-            });
+            }
 
             document.getElementById('loading').style.display = 'none';
         } catch (e) {
-            document.getElementById('loading').innerHTML = "Erro ao carregar jogos.";
+            document.getElementById('loading').innerHTML = "Erro ao sincronizar. Verifique a planilha.";
         }
     }
 
