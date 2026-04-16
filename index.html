@@ -226,7 +226,7 @@
         setTimeout(() => {
             const nomeFilme = filmeSelecionado.title || filmeSelecionado.name;
             const empresa = inputNomeEmpresa.value || "Inove TV";
-            const msg = encodeURIComponent(`🔥 Confira o lançamento: *${nomeFilme}*!\n\nAssista agora na *${empresa}* 📺`);
+            const msg = encodeURIComponent(`🔥 Confira Agora: *${nomeFilme}*!\n\nAssista agora na *${empresa}* 📺`);
             window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
         }, 500);
     };
