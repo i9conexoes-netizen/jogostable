@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inove Sports | Marketing VIP</title>
+    <title>Inove TV | Esportes VIP</title>
     <style>
         body { font-family: 'Segoe UI', Roboto, sans-serif; background: #0b0b0b; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; max-width: 1000px; }
@@ -11,68 +11,51 @@
         .input-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-size: 11px; color: #888; text-transform: uppercase; }
         input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #0c1221; color: white; outline: none; box-sizing: border-box; }
-        
         #listaJogos { background: #0c1221; border: 1px solid #333; border-radius: 8px; max-height: 200px; overflow-y: auto; margin-bottom: 15px; display: none; }
-        .jogo-item { padding: 10px; border-bottom: 1px solid #222; cursor: pointer; font-size: 12px; }
+        .jogo-item { padding: 12px; border-bottom: 1px solid #222; cursor: pointer; font-size: 13px; }
         .jogo-item:hover { background: #25d36633; }
-        .liga-tag { font-size: 9px; color: #25d366; font-weight: bold; }
-
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-bottom: 10px; }
-        .btn-buscar { background: #25d366; color: #000; }
-        .btn-download { background: #e50914; color: white; }
-        
+        .btn-buscar { width: 100%; padding: 15px; background: #25d366; color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-bottom: 10px; }
+        .btn-download { width: 100%; padding: 15px; background: #e50914; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         canvas { max-width: 100%; width: 340px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
 
-    <h1 style="color:#25d366; letter-spacing: 2px; margin-bottom: 30px; text-transform: uppercase;">Inove Sports VIP</h1>
+    <h1 style="color:#25d366; letter-spacing: 2px; text-transform: uppercase;">Marketing Inove Sports</h1>
 
     <div class="container">
         <div class="controls">
             <div class="input-group">
                 <label>Campeonato</label>
-                <select id="selectLiga">
+                <select id="ligaId">
                     <option value="325">Brasileirão Série A 🇧🇷</option>
                     <option value="390">Brasileirão Série B 🇧🇷</option>
                     <option value="2">Champions League 🇪🇺</option>
                     <option value="17">Premier League 🏴󠁧󠁢󠁥󠁮󠁧󠁿</option>
-                    <option value="8">La Liga 🇪🇸</option>
                 </select>
             </div>
 
-            <button class="btn btn-buscar" onclick="buscarPartidas()">🔄 Buscar Jogos de Hoje</button>
+            <button class="btn-buscar" onclick="carregarPartidas()">🔄 Buscar Jogos de Hoje</button>
             <div id="listaJogos"></div>
 
             <div class="input-group">
                 <label>Nome da Empresa</label>
                 <input type="text" id="inputEmpresa" value="Inove TV">
             </div>
-
             <div class="input-group">
-                <label>Transmissão (Canais)</label>
-                <input type="text" id="inputCanais" placeholder="Ex: Premiere, Globo, CazéTV">
+                <label>Onde vai passar?</label>
+                <input type="text" id="inputCanais" placeholder="Ex: Premiere, Globo, Star+">
             </div>
-
             <div class="input-group">
-                <label>Cor do Destaque</label>
+                <label>Cor do Banner</label>
                 <select id="corDestaque">
-                    <option value="#25d366" selected>Verde Esporte</option>
+                    <option value="#25d366">Verde Esporte</option>
                     <option value="#e50914">Vermelho Inove</option>
-                    <option value="#ffffff">Branco Clean</option>
-                    <option value="#ffc107">Amarelo Atenção</option>
+                    <option value="#007bff">Azul Noite</option>
                 </select>
             </div>
 
-            <div class="input-group">
-                <label>Fundo do Banner</label>
-                <select id="selectFundo">
-                    <option value="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=1080">Estádio Noturno</option>
-                    <option value="https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1080">Gramado Close</option>
-                </select>
-            </div>
-
-            <button class="btn btn-download" id="btnDownload">Baixar Banner de Jogo</button>
+            <button class="btn-download" id="btnDownload">Baixar Banner VIP</button>
         </div>
 
         <canvas id="jogoCanvas"></canvas>
@@ -85,22 +68,17 @@
     canvas.width = 1080; canvas.height = 1920;
 
     const LOGO_INOVE = "https://i.imgur.com/lhhqACi.png";
-    const imgInove = new Image(); imgInove.crossOrigin = "anonymous"; imgInove.src = LOGO_INOVE;
+    const BACK_URL = "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=1080";
     
-    let imgBack = new Image();
+    const imgInove = new Image(); imgInove.crossOrigin = "anonymous"; imgInove.src = LOGO_INOVE;
+    const imgBack = new Image(); imgBack.crossOrigin = "anonymous"; imgBack.src = BACK_URL;
+
     let jogoAtivo = null;
 
-    function carregarAssets() {
-        imgBack = new Image();
-        imgBack.crossOrigin = "anonymous";
-        imgBack.src = document.getElementById('selectFundo').value;
-        imgBack.onload = desenhar;
-    }
-
-    async function buscarPartidas() {
+    async function carregarPartidas() {
         const lista = document.getElementById('listaJogos');
-        const ligaId = document.getElementById('selectLiga').value;
-        lista.innerHTML = "<p style='padding:10px'>Consultando Sofascore...</p>";
+        const idLiga = document.getElementById('ligaId').value;
+        lista.innerHTML = "<p style='padding:10px'>Buscando...</p>";
         lista.style.display = "block";
 
         const d = new Date();
@@ -113,41 +91,39 @@
             const data = await res.json();
             lista.innerHTML = "";
 
-            const filtrados = data.events.filter(e => e.tournament.uniqueTournament.id == ligaId);
+            const jogos = data.events.filter(e => e.tournament.uniqueTournament.id == idLiga);
 
-            if (filtrados.length === 0) {
-                lista.innerHTML = "<p style='padding:10px'>Sem jogos para esta liga hoje.</p>";
+            if (jogos.length === 0) {
+                lista.innerHTML = "<p style='padding:10px; color: #ff4444;'>Nenhum jogo hoje.</p>";
                 return;
             }
 
-            filtrados.forEach(ev => {
-                const item = document.createElement('div');
-                item.className = "jogo-item";
-                const hora = new Date(ev.startTimestamp * 1000).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-                item.innerHTML = `<span class="liga-tag">${ev.tournament.name}</span><br>${ev.homeTeam.name} x ${ev.awayTeam.name} - <b>${hora}</b>`;
-                item.onclick = () => {
-                    jogoAtivo = { casa: ev.homeTeam.name, fora: ev.awayTeam.name, hora: hora, liga: ev.tournament.name };
+            jogos.forEach(j => {
+                const div = document.createElement('div');
+                div.className = "jogo-item";
+                const hora = new Date(j.startTimestamp * 1000).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                div.innerHTML = `<b>${j.homeTeam.name} x ${j.awayTeam.name}</b><br><small>${j.tournament.name} - ${hora}</small>`;
+                div.onclick = () => {
+                    jogoAtivo = { casa: j.homeTeam.name, fora: j.awayTeam.name, hora: hora, campeonato: j.tournament.name };
                     desenhar();
                     lista.style.display = "none";
                 };
-                lista.appendChild(item);
+                lista.appendChild(div);
             });
         } catch (e) {
-            alert("Erro na conexão. Verifique o limite da sua API.");
+            alert("Limite da API atingido. Aguarde ou use outra chave.");
         }
     }
 
     function desenhar() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (imgBack.complete) ctx.drawImage(imgBack, 0, 0, canvas.width, canvas.height);
-        
-        // Overlay escuro
+        ctx.drawImage(imgBack, 0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "rgba(0,0,0,0.85)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         const cor = document.getElementById('corDestaque').value;
         const empresa = document.getElementById('inputEmpresa').value.toUpperCase();
-        const canais = document.getElementById('inputCanais').value || "CANAIS LIBERADOS";
+        const canais = document.getElementById('inputCanais').value || "CANAIS IPTV";
 
         if (!jogoAtivo) {
             ctx.fillStyle = "#fff"; ctx.font = "40px sans-serif"; ctx.textAlign = "center";
@@ -156,46 +132,32 @@
         }
 
         ctx.textAlign = "center";
-        
-        // Liga
-        ctx.fillStyle = cor;
-        ctx.font = "bold 50px sans-serif";
-        ctx.fillText(jogoAtivo.liga.toUpperCase(), 540, 220);
+        ctx.fillStyle = cor; ctx.font = "bold 50px sans-serif";
+        ctx.fillText(jogoAtivo.campeonato.toUpperCase(), 540, 250);
 
-        // Confronto
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 100px sans-serif";
-        ctx.fillText(jogoAtivo.casa.toUpperCase(), 540, 500);
-        ctx.fillStyle = cor;
-        ctx.font = "italic bold 130px sans-serif";
+        ctx.fillStyle = "#fff"; ctx.font = "bold 95px sans-serif";
+        ctx.fillText(jogoAtivo.casa.toUpperCase(), 540, 520);
+        ctx.fillStyle = cor; ctx.font = "italic bold 120px sans-serif";
         ctx.fillText("VS", 540, 650);
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 100px sans-serif";
-        ctx.fillText(jogoAtivo.fora.toUpperCase(), 540, 800);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 95px sans-serif";
+        ctx.fillText(jogoAtivo.fora.toUpperCase(), 540, 780);
 
-        // Info Box
-        ctx.fillStyle = "rgba(255,255,255,0.08)";
-        ctx.beginPath(); ctx.roundRect(100, 950, 880, 450, 40); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.07)";
+        ctx.beginPath(); ctx.roundRect(100, 950, 880, 420, 40); ctx.fill();
 
-        ctx.fillStyle = cor;
-        ctx.font = "bold 55px sans-serif";
-        ctx.fillText("HORÁRIO DO JOGO", 540, 1050);
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 160px sans-serif";
-        ctx.fillText(jogoAtivo.hora, 540, 1220);
+        ctx.fillStyle = cor; ctx.font = "bold 50px sans-serif";
+        ctx.fillText("HORÁRIO", 540, 1030);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 150px sans-serif";
+        ctx.fillText(jogoAtivo.hora, 540, 1160);
 
-        ctx.fillStyle = cor;
-        ctx.font = "bold 55px sans-serif";
-        ctx.fillText("ONDE ASSISTIR", 540, 1310);
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 65px sans-serif";
-        ctx.fillText(canais, 540, 1380);
+        ctx.fillStyle = cor; ctx.font = "bold 50px sans-serif";
+        ctx.fillText("TRANSMISSÃO", 540, 1260);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 65px sans-serif";
+        ctx.fillText(canais, 540, 1330);
 
-        // Rodapé Empresa
         ctx.font = "bold 50px sans-serif";
-        ctx.fillText("Acompanhe com a melhor imagem na", 540, 1580);
-        ctx.fillStyle = cor;
-        ctx.font = "bold 110px sans-serif";
+        ctx.fillText("Assista com a melhor imagem na", 540, 1580);
+        ctx.fillStyle = cor; ctx.font = "bold 110px sans-serif";
         ctx.fillText(empresa, 540, 1690);
 
         if (imgInove.complete) ctx.drawImage(imgInove, 340, 1750, 400, 130);
@@ -204,17 +166,15 @@
     document.getElementById('inputEmpresa').oninput = desenhar;
     document.getElementById('inputCanais').oninput = desenhar;
     document.getElementById('corDestaque').onchange = desenhar;
-    document.getElementById('selectFundo').onchange = carregarAssets;
-    
+    imgBack.onload = desenhar;
+
     document.getElementById('btnDownload').onclick = () => {
         if(!jogoAtivo) return alert("Selecione um jogo!");
         const a = document.createElement('a');
-        a.download = `Inove_Sports_${jogoAtivo.casa}.png`;
+        a.download = `Inove_Esporte_${jogoAtivo.casa}.png`;
         a.href = canvas.toDataURL('image/png');
         a.click();
     };
-
-    carregarAssets();
 </script>
 </body>
 </html>
