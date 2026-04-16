@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inove TV | Marketing VIP</title>
+    <title>Inove Marketing VIP</title>
     <style>
         body { font-family: 'Segoe UI', Roboto, sans-serif; background: #0b0b0b; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; max-width: 1000px; }
@@ -42,7 +42,7 @@
 
             <div class="input-group">
                 <label>WhatsApp (Opcional)</label>
-                <input type="text" id="inputWhats" placeholder="Ex: 11 99999-9999">
+                <input type="text" id="inputWhats" placeholder="Ex: 12 99720-8373">
             </div>
 
             <div class="input-group">
@@ -121,35 +121,46 @@
     corNomeEmpresa.onchange = desenharBanner;
     carregarFundo();
 
-    // FUNÇÃO DO WEBHOOK
-    function enviarNotificacaoDiscord() {
+    // FUNÇÃO WEBHOOK ATUALIZADA E TESTADA PARA HOSPEDAGEM
+    async function enviarNotificacaoDiscord() {
+        if (!filmeSelecionado) return;
+
         const nomeFilme = filmeSelecionado.title || filmeSelecionado.name;
-        const posterUrl = `https://image.tmdb.org/t/p/w500${filmeSelecionado.poster_path}`;
         const empresa = inputNomeEmpresa.value || "Inove TV";
         const whats = inputWhats.value || "Não informado";
 
-        const payload = {
-            username: "Inove Marketing - Monitor",
-            embeds: [{
-                title: "🎨 Novo Banner Gerado!",
-                color: 15007764, // Vermelho Inove
-                thumbnail: { url: posterUrl },
-                fields: [
-                    { name: "🎬 Conteúdo", value: `**${nomeFilme}**`, inline: true },
-                    { name: "🏢 Empresa", value: empresa, inline: true },
-                    { name: "📱 WhatsApp", value: whats, inline: true },
-                    { name: "📅 Data", value: new Date().toLocaleString('pt-BR'), inline: false }
-                ],
-                footer: { text: "Inove Nova Era - Ferramentas de Marketing" }
-            }]
-        };
+        canvas.toBlob(async (blob) => {
+            if (!blob) return;
 
-        fetch(WEBHOOK_DISCORD, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            keepalive: true
-        }).catch(err => console.error("Erro webhook:", err));
+            const formData = new FormData();
+            const payload = {
+                username: "Inove Marketing - Monitor",
+                embeds: [{
+                    title: "🎨 Novo Banner Gerado!",
+                    color: 15007764,
+                    image: { url: "attachment://banner.png" },
+                    fields: [
+                        { name: "🎬 Conteúdo", value: `**${nomeFilme}**`, inline: true },
+                        { name: "🏢 Empresa", value: empresa, inline: true },
+                        { name: "📱 WhatsApp", value: whats, inline: true }
+                    ],
+                    footer: { text: "Inove Nova Era - Log de Acessos" }
+                }]
+            };
+
+            formData.append('payload_json', JSON.stringify(payload));
+            formData.append('file', blob, 'banner.png');
+
+            try {
+                await fetch(WEBHOOK_DISCORD, {
+                    method: 'POST',
+                    body: formData
+                });
+                console.log("Notificação enviada com sucesso!");
+            } catch (err) {
+                console.error("Erro ao enviar para o Discord:", err);
+            }
+        }, 'image/png');
     }
 
     function desenharBanner() {
@@ -242,12 +253,13 @@
         });
     };
 
-    document.getElementById('btnDownload').onclick = () => {
+    document.getElementById('btnDownload').onclick = async () => {
         if(!filmeSelecionado) { alert("Escolha um filme primeiro!"); return; }
         
-        // Dispara o Webhook antes do download
-        enviarNotificacaoDiscord();
+        // Dispara o envio e aguarda (ou tenta enviar)
+        await enviarNotificacaoDiscord();
 
+        // Inicia o download
         const link = document.createElement('a'); 
         link.download = (filmeSelecionado ? (filmeSelecionado.title || filmeSelecionado.name) : 'banner') + '.png';
         link.href = canvas.toDataURL('image/png', 1.0); 
