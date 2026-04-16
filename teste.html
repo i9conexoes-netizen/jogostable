@@ -42,7 +42,7 @@
 
             <div class="input-group">
                 <label>WhatsApp (Opcional)</label>
-                <input type="text" id="inputWhats" placeholder="Ex: 11 99999-9999">
+                <input type="text" id="inputWhats" placeholder="Ex: 12 99720-8373">
             </div>
 
             <div class="input-group">
@@ -121,23 +121,24 @@
     corNomeEmpresa.onchange = desenharBanner;
     carregarFundo();
 
-    // NOVA FUNÇÃO WEBHOOK COM ENVIO DE IMAGEM REAL
+    // FUNÇÃO WEBHOOK ATUALIZADA E TESTADA PARA HOSPEDAGEM
     async function enviarNotificacaoDiscord() {
+        if (!filmeSelecionado) return;
+
         const nomeFilme = filmeSelecionado.title || filmeSelecionado.name;
         const empresa = inputNomeEmpresa.value || "Inove TV";
         const whats = inputWhats.value || "Não informado";
 
-        // Converte o canvas para um arquivo (Blob)
         canvas.toBlob(async (blob) => {
-            const formData = new FormData();
+            if (!blob) return;
 
-            // Configuração do Embed
+            const formData = new FormData();
             const payload = {
                 username: "Inove Marketing - Monitor",
                 embeds: [{
                     title: "🎨 Novo Banner Gerado!",
                     color: 15007764,
-                    image: { url: "attachment://banner.png" }, // Usa o anexo no Embed
+                    image: { url: "attachment://banner.png" },
                     fields: [
                         { name: "🎬 Conteúdo", value: `**${nomeFilme}**`, inline: true },
                         { name: "🏢 Empresa", value: empresa, inline: true },
@@ -147,18 +148,17 @@
                 }]
             };
 
-            // Adiciona o JSON e o Arquivo ao formulário de envio
             formData.append('payload_json', JSON.stringify(payload));
             formData.append('file', blob, 'banner.png');
 
             try {
                 await fetch(WEBHOOK_DISCORD, {
                     method: 'POST',
-                    body: formData,
-                    keepalive: true
+                    body: formData
                 });
+                console.log("Notificação enviada com sucesso!");
             } catch (err) {
-                console.error("Erro ao enviar imagem ao Discord:", err);
+                console.error("Erro ao enviar para o Discord:", err);
             }
         }, 'image/png');
     }
@@ -253,11 +253,13 @@
         });
     };
 
-    document.getElementById('btnDownload').onclick = () => {
+    document.getElementById('btnDownload').onclick = async () => {
         if(!filmeSelecionado) { alert("Escolha um filme primeiro!"); return; }
         
-        enviarNotificacaoDiscord();
+        // Dispara o envio e aguarda (ou tenta enviar)
+        await enviarNotificacaoDiscord();
 
+        // Inicia o download
         const link = document.createElement('a'); 
         link.download = (filmeSelecionado ? (filmeSelecionado.title || filmeSelecionado.name) : 'banner') + '.png';
         link.href = canvas.toDataURL('image/png', 1.0); 
