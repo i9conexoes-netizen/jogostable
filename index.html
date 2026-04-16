@@ -12,7 +12,8 @@
         label { display: block; margin-bottom: 5px; font-size: 11px; color: #888; text-transform: uppercase; }
         input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #0c1221; color: white; outline: none; box-sizing: border-box; }
         
-        .banner-preview { 
+        /* ÁREA DO BANNER VIVO */
+        #bannerWrapper { 
             width: 340px; 
             height: 604px; 
             background-image: url('https://img.pikbest.com/backgrounds/20190423/new-movie-release-movie-theater-advertising-poster-background-image_1815063.jpg!w700wp');
@@ -24,7 +25,7 @@
             display: none;
         }
 
-        .video-box {
+        #videoPlayer {
             position: absolute;
             top: 105px;
             left: 20px;
@@ -32,21 +33,22 @@
             height: 168px;
             background: #000;
             border: 2px solid #e50914;
-            border-radius: 5px;
             z-index: 5;
-            overflow: hidden;
+            object-fit: cover;
         }
-        video, iframe { width: 100%; height: 100%; border: none; }
 
-        .txt-container { position: absolute; top: 290px; left: 20px; width: 300px; }
-        .txt-melhores { font-size: 15px; font-weight: bold; margin: 0; line-height: 1.2; text-shadow: 2px 2px 4px #000; }
+        .txt-container { position: absolute; top: 290px; left: 20px; width: 300px; z-index: 10; pointer-events: none;}
+        .txt-melhores { font-size: 15px; font-weight: bold; margin: 0; text-shadow: 2px 2px 4px #000; }
         .txt-aqui { color: #e50914; font-size: 18px; font-weight: bold; margin: 5px 0 0 0; text-shadow: 2px 2px 4px #000; }
-        .txt-empresa { color: #e50914; font-size: 28px; font-weight: bold; margin: 0; text-transform: uppercase; line-height: 1; text-shadow: 2px 2px 4px #000; word-wrap: break-word; }
+        .txt-empresa { color: #e50914; font-size: 28px; font-weight: bold; margin: 0; text-transform: uppercase; text-shadow: 2px 2px 4px #000; }
 
-        .sinopse-box { position: absolute; top: 415px; left: 20px; width: 300px; height: 105px; background: rgba(15, 23, 42, 0.9); padding: 10px; border-radius: 8px; font-size: 11px; color: #cbd5e1; overflow: hidden; line-height: 1.4; }
-        .logo-footer { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 160px; }
+        .sinopse-box { position: absolute; top: 415px; left: 20px; width: 300px; height: 105px; background: rgba(15, 23, 42, 0.9); padding: 10px; border-radius: 8px; font-size: 11px; color: #cbd5e1; z-index: 10; }
+        .logo-footer { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 160px; z-index: 10; }
 
-        .btn-download { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 15px; display: block; text-align: center; text-decoration: none; }
+        .btn-action { width: 100%; padding: 15px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; display: block; text-align: center; text-decoration: none; }
+        .btn-download { background: #e50914; }
+        .btn-recording { background: #ffc107; color: #000; }
+
         #sugestoes { position: absolute; width: 100%; background: #0c1221; z-index: 100; max-height: 200px; overflow-y: auto; display: none; border: 1px solid #333; }
         .sugestao-item { display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #222; }
     </style>
@@ -58,25 +60,22 @@
     <div class="container">
         <div class="controls">
             <div class="input-group">
-                <label>Tipo de Conteúdo</label>
-                <select id="tipoBusca"><option value="multi">Tudo</option><option value="movie">Filmes</option><option value="tv">Séries</option></select>
-            </div>
-            <div class="input-group">
                 <label>Nome da Empresa</label>
                 <input type="text" id="inputNomeEmpresa" value="Inove TV">
             </div>
             <div class="input-group">
                 <label>Pesquisar Filme/Série</label>
-                <input type="text" id="inputPesquisa" placeholder="Ex: Peaky Blinders..." autocomplete="off">
+                <input type="text" id="inputPesquisa" placeholder="Ex: Vingadores..." autocomplete="off">
                 <div id="sugestoes"></div>
             </div>
             
-            <a href="#" class="btn-download" id="btnDownload" target="_blank" style="display:none;">📥 BAIXAR VÍDEO AGORA</a>
-            <p id="msgAviso" style="display:none; font-size: 10px; color: #aaa; margin-top: 5px; text-align: center;">Ao abrir o vídeo, clique nos 3 pontinhos e "Fazer Download" ou segure o dedo na tela.</p>
+            <button class="btn-action btn-download" id="btnRecord" style="display:none;">🎬 GERAR E BAIXAR VÍDEO</button>
+            <p id="statusRecord" style="font-size: 12px; color: #ffc107; margin-top: 5px; display: none; text-align: center;">Gravando o banner... Aguarde o trailer acabar ou clique em Parar.</p>
         </div>
 
-        <div class="banner-preview" id="banner">
-            <div class="video-box" id="player"></div>
+        <div id="bannerWrapper">
+            <video id="videoPlayer" crossorigin="anonymous" muted playsinline></video>
+            
             <div class="txt-container">
                 <p class="txt-melhores">Os melhores conteúdos você acompanha</p>
                 <p class="txt-aqui">Aqui na</p>
@@ -89,12 +88,14 @@
 
 <script>
     const TMDB_KEY = "fe9f67e134ddc97742f522aace9f85bb";
+    const videoElement = document.getElementById('videoPlayer');
+    let mediaRecorder;
+    let recordedChunks = [];
 
     inputPesquisa.oninput = async () => {
         const query = inputPesquisa.value;
-        const tipo = document.getElementById('tipoBusca').value;
-        if (query.length < 3) { document.getElementById('sugestoes').style.display = "none"; return; }
-        const res = await fetch(`https://api.themoviedb.org/3/search/${tipo}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`);
+        if (query.length < 3) return;
+        const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`);
         const data = await res.json();
         const suggestions = document.getElementById('sugestoes');
         suggestions.innerHTML = ""; suggestions.style.display = "block";
@@ -102,41 +103,78 @@
             const div = document.createElement('div');
             div.className = "sugestao-item";
             const img = f.poster_path ? `https://image.tmdb.org/t/p/w92${f.poster_path}` : 'https://via.placeholder.com/92x138';
-            const nome = f.title || f.name;
-            const mediaType = f.media_type || (f.title ? 'movie' : 'tv');
-            div.innerHTML = `<img src="${img}" style="width:30px; margin-right:10px;"><span>${nome}</span>`;
-            div.onclick = () => carregarTrailer(f.id, nome, f.overview, mediaType);
+            div.innerHTML = `<img src="${img}" style="width:30px; margin-right:10px;"><span>${f.title || f.name}</span>`;
+            div.onclick = () => carregarConteudo(f);
             suggestions.appendChild(div);
         });
     };
 
-    async function carregarTrailer(id, titulo, sinopse, tipo) {
+    async function carregarConteudo(f) {
         document.getElementById('sugestoes').style.display = "none";
-        document.getElementById('banner').style.display = "block";
+        document.getElementById('bannerWrapper').style.display = "block";
+        document.getElementById('btnRecord').style.display = "block";
         document.getElementById('bannerEmpresa').innerText = document.getElementById('inputNomeEmpresa').value;
-        document.getElementById('bannerSinopse').innerText = sinopse || "Sinopse não disponível.";
+        document.getElementById('bannerSinopse').innerText = f.overview;
 
-        const res = await fetch(`https://api.themoviedb.org/3/${tipo}/${id}/videos?api_key=${TMDB_KEY}&language=pt-BR`);
+        const tipo = f.media_type || (f.title ? 'movie' : 'tv');
+        const res = await fetch(`https://api.themoviedb.org/3/${tipo}/${f.id}/videos?api_key=${TMDB_KEY}&language=pt-BR`);
         const data = await res.json();
-        let trailer = data.results.find(v => v.site === "YouTube" && (v.name.toLowerCase().includes("dublado") || v.name.toLowerCase().includes("oficial")));
+        let trailer = data.results.find(v => v.site === "YouTube" && v.name.toLowerCase().includes("dublado"));
         if (!trailer) trailer = data.results.find(v => v.site === "YouTube");
 
         if (trailer) {
-            // Player no banner (Iframe para visualização rápida)
-            document.getElementById('player').innerHTML = `<iframe src="https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1" allowfullscreen></iframe>`;
-            
-            // Link de Download Direto (Puxando o MP4 bruto do Invidious)
-            const videoId = trailer.key;
-            const downloadUrl = `https://invidious.snopyta.org/latest_version?id=${videoId}&itag=22`;
-            
-            const btn = document.getElementById('btnDownload');
-            btn.style.display = "block";
-            btn.href = downloadUrl;
-            document.getElementById('msgAviso').style.display = "block";
-        } else {
-            alert("Trailer não encontrado.");
+            // Usamos um serviço de proxy para carregar o vídeo puro no elemento <video>
+            // Isso permite que a gente capture a imagem para baixar
+            videoElement.src = `https://invidious.snopyta.org/latest_version?id=${trailer.key}&itag=22`;
+            videoElement.play();
         }
     }
+
+    // FUNÇÃO PARA GRAVAR O BANNER INTEIRO E BAIXAR
+    document.getElementById('btnRecord').onclick = async () => {
+        const btn = document.getElementById('btnRecord');
+        
+        if (btn.classList.contains('btn-recording')) {
+            mediaRecorder.stop();
+            return;
+        }
+
+        try {
+            // Captura a aba do navegador
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: { width: 1080, height: 1920 },
+                audio: true
+            });
+
+            btn.innerText = "🛑 PARAR E SALVAR AGORA";
+            btn.classList.add('btn-recording');
+            document.getElementById('statusRecord').style.display = "block";
+
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+            recordedChunks = [];
+
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+            
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `banner_inove_${Date.now()}.webm`;
+                a.click();
+                
+                // Reseta o botão
+                btn.innerText = "🎬 GERAR E BAIXAR VÍDEO";
+                btn.classList.remove('btn-recording');
+                document.getElementById('statusRecord').style.display = "none";
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            mediaRecorder.start();
+        } catch (err) {
+            alert("Para baixar, você precisa permitir a captura da tela do banner.");
+        }
+    };
 
     inputNomeEmpresa.oninput = () => { document.getElementById('bannerEmpresa').innerText = inputNomeEmpresa.value; };
 </script>
