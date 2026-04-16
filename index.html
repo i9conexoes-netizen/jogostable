@@ -2,84 +2,209 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Inove Play | Guia de Jogos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inove TV | Gerador de Vídeo VIP</title>
     <style>
-        :root { --primary: #e50914; --bg: #0b0b0b; --card: #141414; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 600px; }
-        h1 { color: var(--primary); text-transform: uppercase; text-align: center; letter-spacing: 2px; margin-bottom: 5px; }
-        .subtitle { text-align: center; color: #666; font-size: 12px; margin-bottom: 30px; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: #0b0b0b; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; max-width: 1000px; }
+        .controls { background: #141414; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; border: 1px solid #222; }
+        .input-group { margin-bottom: 15px; position: relative; }
+        label { display: block; margin-bottom: 5px; font-size: 11px; color: #888; text-transform: uppercase; }
+        input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #0c1221; color: white; outline: none; box-sizing: border-box; }
         
-        .jogo-card { 
-            background: var(--card); border-radius: 15px; padding: 20px; margin-bottom: 20px;
-            border: 1px solid #222; position: relative; overflow: hidden;
+        /* BANNER STORIES */
+        .banner-preview { 
+            width: 340px; 
+            height: 604px; 
+            background-image: url('https://img.pikbest.com/backgrounds/20190423/new-movie-release-movie-theater-advertising-poster-background-image_1815063.jpg!w700wp');
+            background-size: cover;
+            border-radius: 10px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+            display: none;
         }
-        .jogo-card::before { content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); }
-        
-        .confronto { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .time { flex: 1; text-align: center; font-weight: bold; font-size: 18px; text-transform: uppercase; }
-        .vs { padding: 0 10px; color: var(--primary); font-weight: 900; font-size: 12px; opacity: 0.7; }
-        
-        .detalhes { display: flex; justify-content: space-around; border-top: 1px solid #222; padding-top: 15px; }
-        .info-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #aaa; }
-        .info-item strong { color: #fff; }
-        
-        .badge-transmissao { background: rgba(229, 9, 20, 0.1); color: var(--primary); padding: 4px 10px; border-radius: 5px; border: 1px solid var(--primary); font-size: 11px; font-weight: bold; }
-        .loader { text-align: center; padding: 50px; color: #444; }
+
+        /* VÍDEO RETANGULAR */
+        .video-box {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            width: 300px;
+            height: 168px;
+            background: #000;
+            border: 2px solid #e50914;
+            border-radius: 5px;
+            z-index: 5;
+        }
+        video { width: 100%; height: 100%; object-fit: cover; }
+
+        /* TEXTOS AJUSTADOS PARA NÃO VAZAR */
+        .txt-container { 
+            position: absolute; 
+            top: 285px; 
+            left: 20px; 
+            width: 300px; 
+            text-shadow: 2px 2px 4px #000;
+        }
+        .txt-melhores { font-size: 16px; font-weight: bold; margin: 0; line-height: 1.2; width: 100%; }
+        .txt-aqui { color: #e50914; font-size: 18px; font-weight: bold; margin: 5px 0 0 0; }
+        .txt-empresa { 
+            color: #e50914; 
+            font-size: 30px; 
+            font-weight: bold; 
+            margin: 0; 
+            text-transform: uppercase; 
+            word-wrap: break-word; /* Força quebra de linha se o nome for grande */
+            line-height: 1;
+        }
+
+        .sinopse-box {
+            position: absolute;
+            top: 410px;
+            left: 20px;
+            width: 300px;
+            height: 110px;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            color: #cbd5e1;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+
+        .logo-footer {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160px;
+        }
+
+        .btn-download { width: 100%; padding: 15px; background: #e50914; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 15px; }
+        #sugestoes { position: absolute; width: 100%; background: #0c1221; z-index: 100; max-height: 200px; overflow-y: auto; display: none; border: 1px solid #333; }
+        .sugestao-item { display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #222; }
+        .sugestao-item:hover { background: #1a1a1a; }
+        .sugestao-item img { width: 35px; height: 50px; margin-right: 10px; border-radius: 3px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>PROGRAMAÇÃO ESPORTIVA</h1>
-    <div class="subtitle">Onde assistir aos jogos de hoje | Inove Play</div>
-    
-    <div id="loading" class="loader">Carregando horários e canais...</div>
-    <div id="lista-jogos"></div>
-</div>
+    <h1 style="color:#e50914; text-transform: uppercase; letter-spacing: 2px;">Marketing Inove Vídeo</h1>
+
+    <div class="container">
+        <div class="controls">
+            <div class="input-group">
+                <label>Tipo de Conteúdo</label>
+                <select id="tipoBusca">
+                    <option value="multi">Tudo (Filmes e Séries)</option>
+                    <option value="movie">Apenas Filmes 🎬</option>
+                    <option value="tv">Apenas Séries 🎞️</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Nome da Empresa</label>
+                <input type="text" id="inputNomeEmpresa" value="Inove TV">
+            </div>
+            <div class="input-group">
+                <label>Pesquisar Nome</label>
+                <input type="text" id="inputPesquisa" placeholder="Ex: Peaky Blinders..." autocomplete="off">
+                <div id="sugestoes"></div>
+            </div>
+            <button class="btn-download" id="btnDownload">📥 BAIXAR VÍDEO</button>
+        </div>
+
+        <div class="banner-preview" id="banner">
+            <div class="video-box" id="player"></div>
+            
+            <div class="txt-container">
+                <p class="txt-melhores">Os melhores conteúdos você acompanha</p>
+                <p class="txt-aqui">Aqui na</p>
+                <p class="txt-empresa" id="bannerEmpresa">INOVE TV</p>
+            </div>
+
+            <div class="sinopse-box" id="bannerSinopse"></div>
+
+            <img src="https://i.imgur.com/lhhqACi.png" class="logo-footer">
+        </div>
+    </div>
 
 <script>
-    const LINK_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTRRBFFO-rVhB2NwC8gupCq--S2x_IvlgenVTE3w0OLkjibGaZXXMt-IXuA1y1XcDIAzSy7NK0tLAvN/pub?output=csv";
+    const TMDB_KEY = "fe9f67e134ddc97742f522aace9f85bb";
+    let videoUrlGlobal = "";
 
-    async function carregarJogos() {
-        try {
-            const res = await fetch(LINK_CSV + "&cache=" + new Date().getTime());
-            const text = await res.text();
-            const linhas = text.split('\n').map(l => l.split(',').map(c => c.replace(/"/g, '').trim()));
+    inputPesquisa.oninput = async () => {
+        const query = inputPesquisa.value;
+        const tipo = document.getElementById('tipoBusca').value;
+        if (query.length < 3) { document.getElementById('sugestoes').style.display = "none"; return; }
+        
+        // Busca multi (filmes e séries)
+        const res = await fetch(`https://api.themoviedb.org/3/search/${tipo}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`);
+        const data = await res.json();
+        const suggestions = document.getElementById('sugestoes');
+        suggestions.innerHTML = ""; suggestions.style.display = "block";
+        
+        data.results.slice(0, 5).forEach(f => {
+            const div = document.createElement('div');
+            div.className = "sugestao-item";
+            const img = f.poster_path ? `https://image.tmdb.org/t/p/w92${f.poster_path}` : 'https://via.placeholder.com/92x138';
+            const nome = f.title || f.name;
+            const mediaType = f.media_type || (f.title ? 'movie' : 'tv');
             
-            const lista = document.getElementById('lista-jogos');
-            lista.innerHTML = "";
+            div.innerHTML = `<img src="${img}"><span>${nome}</span>`;
+            div.onclick = () => carregarBannerVideo(f.id, nome, f.overview, mediaType);
+            suggestions.appendChild(div);
+        });
+    };
 
-            // Começamos do 1 para pular o cabeçalho
-            for (let i = 1; i < linhas.length; i++) {
-                const col = linhas[i];
-                
-                // Se tiver pelo menos o nome dos dois times
-                if (col[0] && col[1]) {
-                    const card = document.createElement('div');
-                    card.className = "jogo-card";
-                    card.innerHTML = `
-                        <div class="confronto">
-                            <div class="time">${col[0]}</div>
-                            <div class="vs">VS</div>
-                            <div class="time">${col[1]}</div>
-                        </div>
-                        <div class="detalhes">
-                            <div class="info-item">🕒 <strong>${col[2] || '--:--'}</strong></div>
-                            <div class="info-item">📺 <span class="badge-transmissao">${col[3] || 'A DEFINIR'}</span></div>
-                        </div>
-                    `;
-                    lista.appendChild(card);
-                }
-            }
+    async function carregarBannerVideo(id, titulo, sinopse, tipo) {
+        document.getElementById('sugestoes').style.display = "none";
+        document.getElementById('banner').style.display = "block";
+        document.getElementById('bannerEmpresa').innerText = document.getElementById('inputNomeEmpresa').value;
+        document.getElementById('bannerSinopse').innerText = sinopse || "Sinopse não disponível.";
 
-            document.getElementById('loading').style.display = 'none';
-        } catch (e) {
-            document.getElementById('loading').innerHTML = "Erro ao sincronizar. Verifique a planilha.";
+        // Buscar Trailer (agora aceita movie ou tv)
+        const res = await fetch(`https://api.themoviedb.org/3/${tipo}/${id}/videos?api_key=${TMDB_KEY}&language=pt-BR`);
+        const data = await res.json();
+        
+        let trailer = data.results.find(v => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"));
+
+        // Se não achar em PT-BR, busca no geral
+        if (!trailer) {
+            const resEn = await fetch(`https://api.themoviedb.org/3/${tipo}/${id}/videos?api_key=${TMDB_KEY}`);
+            const dataEn = await resEn.json();
+            trailer = dataEn.results.find(v => v.site === "YouTube");
+        }
+
+        if (trailer) {
+            const videoId = trailer.key;
+            // Proxy para pegar o MP4 direto
+            videoUrlGlobal = `https://yewtu.be/latest_version?id=${videoId}&itag=22`;
+            
+            document.getElementById('player').innerHTML = `
+                <video controls autoplay muted loop playsinline>
+                    <source src="${videoUrlGlobal}" type="video/mp4">
+                    Seu navegador não suporta vídeos.
+                </video>`;
+        } else {
+            alert("Trailer não encontrado para este conteúdo.");
         }
     }
 
-    carregarJogos();
+    document.getElementById('btnDownload').onclick = () => {
+        if (!videoUrlGlobal) { alert("Selecione um conteúdo primeiro!"); return; }
+        const a = document.createElement('a');
+        a.href = videoUrlGlobal;
+        a.download = `inove_video_${Date.now()}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
+
+    inputNomeEmpresa.oninput = () => {
+        document.getElementById('bannerEmpresa').innerText = inputNomeEmpresa.value;
+    };
 </script>
 </body>
 </html>
