@@ -15,7 +15,6 @@
         .sugestao-item { display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #222; font-size: 13px; }
         .sugestao-item img { width: 40px; height: 60px; margin-right: 12px; border-radius: 4px; object-fit: cover; }
         .btn-download { width: 100%; padding: 15px; background: #e50914; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-bottom: 10px; }
-        /* BOTÃO WHATSAPP */
         .btn-whatsapp { width: 100%; padding: 15px; background: #25d366; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; font-size: 13px; }
         canvas { max-width: 100%; width: 340px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     </style>
@@ -65,7 +64,6 @@
             </div>
             
             <button class="btn-download" id="btnDownload">Baixar Banner VIP</button>
-            
             <button class="btn-whatsapp" id="btnWhatsShare">
                 <img src="https://static.vecteezy.com/system/resources/thumbnails/018/930/748/small/whatsapp-logo-whatsapp-icon-whatsapp-transparent-free-png.png" width="20">
                 Enviar no WhatsApp
@@ -217,24 +215,21 @@
         link.click();
     };
 
-    // FUNÇÃO COMPARTILHAR WHATSAPP
     document.getElementById('btnWhatsShare').onclick = () => {
         if(!filmeSelecionado) { alert("Escolha um filme primeiro!"); return; }
         
-        // 1. Primeiro baixa a imagem para o celular
         const link = document.createElement('a');
-        link.download = 'banner-para-whatsapp.png';
+        link.download = 'banner-inove.png';
         link.href = canvas.toDataURL('image/png', 1.0);
         link.click();
 
-        // 2. Abre o WhatsApp com a mensagem
-        const nomeFilme = filmeSelecionado.title || filmeSelecionado.name;
-        const msg = encodeURIComponent(`🔥 Confira o lançamento: *${nomeFilme}*!\n\nAssista agora na *${inputNomeEmpresa.value}* 📺`);
-        window.open(`https://api.whatsapp.com/ws?text=${msg}`, '_blank');
-        
-        alert("O banner foi baixado! Agora basta anexar a última imagem da sua galeria no WhatsApp.");
+        setTimeout(() => {
+            const nomeFilme = filmeSelecionado.title || filmeSelecionado.name;
+            const empresa = inputNomeEmpresa.value || "Inove TV";
+            const msg = encodeURIComponent(`🔥 Confira o lançamento: *${nomeFilme}*!\n\nAssista agora na *${empresa}* 📺`);
+            window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
+        }, 500);
     };
-
 </script>
 </body>
 </html>
