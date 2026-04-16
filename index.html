@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inove TV | Gerador de Vídeo VIP</title>
+    <title>Inove TV | Trailers Dublados VIP</title>
     <style>
         body { font-family: 'Segoe UI', Roboto, sans-serif; background: #0b0b0b; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; max-width: 1000px; }
@@ -104,11 +104,11 @@
                 <input type="text" id="inputNomeEmpresa" value="Inove TV">
             </div>
             <div class="input-group">
-                <label>Pesquisar Nome</label>
-                <input type="text" id="inputPesquisa" placeholder="Ex: Peaky Blinders..." autocomplete="off">
+                <label>Pesquisar Nome (Prioridade Dublado)</label>
+                <input type="text" id="inputPesquisa" placeholder="Ex: Vingadores..." autocomplete="off">
                 <div id="sugestoes"></div>
             </div>
-            <a href="#" class="btn-download" id="btnDownload" target="_blank" style="display:none;">📥 BAIXAR VÍDEO DO TRAILER</a>
+            <a href="#" class="btn-download" id="btnDownload" target="_blank" style="display:none;">📥 BAIXAR TRAILER DUBLADO</a>
         </div>
 
         <div class="banner-preview" id="banner">
@@ -155,10 +155,20 @@
         document.getElementById('bannerEmpresa').innerText = document.getElementById('inputNomeEmpresa').value;
         document.getElementById('bannerSinopse').innerText = sinopse || "Sinopse não disponível.";
 
+        // 1. Tentar buscar trailers em Português
         const res = await fetch(`https://api.themoviedb.org/3/${tipo}/${id}/videos?api_key=${TMDB_KEY}&language=pt-BR`);
         const data = await res.json();
-        let trailer = data.results.find(v => v.site === "YouTube");
+        
+        // Filtrar por "Dublado" ou "Trailer Oficial" no nome do vídeo
+        let trailer = data.results.find(v => 
+            v.site === "YouTube" && 
+            (v.name.toLowerCase().includes("dublado") || v.name.toLowerCase().includes("oficial"))
+        );
 
+        // Se não achou com filtro, pega o primeiro em português mesmo
+        if (!trailer) trailer = data.results.find(v => v.site === "YouTube");
+
+        // 2. Se ainda não achou nada em PT-BR, busca no geral (Inglês)
         if (!trailer) {
             const resEn = await fetch(`https://api.themoviedb.org/3/${tipo}/${id}/videos?api_key=${TMDB_KEY}`);
             const dataEn = await resEn.json();
@@ -166,17 +176,15 @@
         }
 
         if (trailer) {
-            // Player oficial
             document.getElementById('player').innerHTML = `
                 <iframe src="https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
             `;
             
-            // Link do SaveFrom (Muito mais confiável)
             const btnDownload = document.getElementById('btnDownload');
             btnDownload.style.display = "block";
             btnDownload.href = `https://pt.savefrom.net/187/#url=https://youtube.com/watch?v=${trailer.key}`;
         } else {
-            alert("Trailer não encontrado.");
+            alert("Trailer não encontrado para este título.");
         }
     }
 
