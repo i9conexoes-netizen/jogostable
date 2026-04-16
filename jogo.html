@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inove Sports | Gerador Automático</title>
+    <style>
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: #0b0b0b; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; max-width: 1000px; }
+        .controls { background: #141414; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; border: 1px solid #222; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 11px; color: #888; text-transform: uppercase; }
+        input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #0c1221; color: white; outline: none; box-sizing: border-box; }
+        
+        #listaJogos { background: #0c1221; border: 1px solid #333; border-radius: 8px; max-height: 250px; overflow-y: auto; margin-bottom: 15px; display: none; }
+        .jogo-item { padding: 12px; border-bottom: 1px solid #222; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; }
+        .jogo-item:hover { background: #25d36633; }
+        
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-bottom: 10px; transition: 0.3s; }
+        .btn-buscar { background: #25d366; color: #000; }
+        .btn-download { background: #e50914; color: white; }
+        canvas { max-width: 100%; width: 340px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+    <h1 style="color:#25d366; letter-spacing: 2px; text-transform: uppercase;">Inove Sports VIP</h1>
+
+    <div class="container">
+        <div class="controls">
+            <button class="btn btn-buscar" onclick="buscarJogosHoje()">🔄 Buscar Jogos de Hoje</button>
+            
+            <div id="listaJogos"></div>
+
+            <div class="input-group">
+                <label>Onde vai passar?</label>
+                <input type="text" id="inputCanais" placeholder="Ex: Premiere, Globo, CazéTV">
+            </div>
+
+            <div class="input-group">
+                <label>Nome da Empresa</label>
+                <input type="text" id="inputEmpresa" value="Inove TV">
+            </div>
+
+            <button class="btn btn-download" id="btnDownload">Baixar Banner de Jogo</button>
+        </div>
+
+        <canvas id="jogoCanvas"></canvas>
+    </div>
+
+<script>
+    const RAPID_API_KEY = "5dd6afbd32msh17e6d58715bd39ep1a81f3jsn1308b02cc4e6";
+    const canvas = document.getElementById('jogoCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 1080; canvas.height = 1920;
+
+    const BACKGROUND_URL = "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=1080&auto=format&fit=crop";
+    const LOGO_INOVE = "https://i.imgur.com/lhhqACi.png";
+
+    let jogoSelecionado = null;
+    const imgBack = new Image(); imgBack.crossOrigin = "anonymous"; imgBack.src = BACKGROUND_URL;
+    const imgInove = new Image(); imgInove.crossOrigin = "anonymous"; imgInove.src = LOGO_INOVE;
+
+    imgBack.onload = () => desenharBanner();
+
+    async function buscarJogosHoje() {
+        const listaDiv = document.getElementById('listaJogos');
+        listaDiv.innerHTML = "<p style='padding:10px'>Buscando partidas...</p>";
+        listaDiv.style.display = "block";
+
+        const hoje = new Date().toLocaleDateString('en-GB').split('/').reverse().join('-'); // Formato YYYY-MM-DD
+        
+        try {
+            const response = await fetch(`https://sofascore.p.rapidapi.com/matches/list-by-date?date=${hoje}`, {
+                "method": "GET",
+                "headers": {
+                    "x-rapidapi-host": "sofascore.p.rapidapi.com",
+                    "x-rapidapi-key": RAPID_API_KEY
+                }
+            });
+
+            const data = await response.json();
+            listaDiv.innerHTML = "";
+
+            // Filtra apenas jogos do Brasileirão Série A (ID do torneio no Sofascore costuma ser 325)
+            const jogosBR = data.events.filter(e => e.tournament.uniqueTournament.id === 325);
+
+            if (jogosBR.length === 0) {
+                listaDiv.innerHTML = "<p style='padding:10px'>Nenhum jogo da Série A hoje.</p>";
+                return;
+            }
+
+            jogosBR.forEach(evento => {
+                const div = document.createElement('div');
+                div.className = "jogo-item";
+                const hora = new Date(evento.startTimestamp * 1000).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                div.innerHTML = `<span>${evento.homeTeam.name} x ${evento.awayTeam.name}</span> <b>${hora}</b>`;
+                div.onclick = () => {
+                    jogoSelecionado = {
+                        casa: evento.homeTeam.name,
+                        fora: evento.awayTeam.name,
+                        hora: hora,
+                        campeonato: "BRASILEIRÃO SÉRIE A"
+                    };
+                    desenharBanner();
+                    listaDiv.style.display = "none";
+                };
+                listaDiv.appendChild(div);
+            });
+        } catch (err) {
+            alert("Erro na API. Verifique sua chave.");
+            listaDiv.style.display = "none";
+        }
+    }
+
+    function desenharBanner() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(imgBack, 0, 0, canvas.width, canvas.height);
+        
+        // Camada escura
+        ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (!jogoSelecionado) {
+            ctx.fillStyle = "#fff"; ctx.font = "40px sans-serif"; ctx.textAlign = "center";
+            ctx.fillText("Selecione um jogo para gerar", 540, 960);
+            return;
+        }
+
+        // Campeonato
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#25d366";
+        ctx.font = "bold 60px sans-serif";
+        ctx.fillText(jogoSelecionado.campeonato, 540, 250);
+
+        // Nomes dos Times
+        ctx.fillStyle = "#fff"; ctx.font = "bold 100px sans-serif";
+        ctx.fillText(jogoSelecionado.casa.toUpperCase(), 540, 550);
+        
+        ctx.fillStyle = "#25d366"; ctx.font = "italic bold 130px sans-serif";
+        ctx.fillText("VS", 540, 700);
+        
+        ctx.fillStyle = "#fff"; ctx.font = "bold 100px sans-serif";
+        ctx.fillText(jogoSelecionado.fora.toUpperCase(), 540, 850);
+
+        // Box Info
+        ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.beginPath(); ctx.roundRect(100, 1000, 880, 450, 40); ctx.fill();
+
+        ctx.fillStyle = "#25d366"; ctx.font = "bold 55px sans-serif";
+        ctx.fillText("HORÁRIO", 540, 1080);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 140px sans-serif";
+        ctx.fillText(jogoSelecionado.hora, 540, 1220);
+
+        ctx.fillStyle = "#25d366"; ctx.font = "bold 55px sans-serif";
+        ctx.fillText("TRANSMISSÃO", 540, 1310);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 65px sans-serif";
+        ctx.fillText(document.getElementById('inputCanais').value || "CANAIS VIP", 540, 1390);
+
+        // Rodapé
+        ctx.fillStyle = "#fff"; ctx.font = "bold 50px sans-serif";
+        ctx.fillText("Assista com a melhor imagem na", 540, 1580);
+        ctx.fillStyle = "#25d366"; ctx.font = "bold 110px sans-serif";
+        ctx.fillText(document.getElementById('inputEmpresa').value.toUpperCase(), 540, 1690);
+
+        if (imgInove.complete) {
+            ctx.drawImage(imgInove, 340, 1740, 400, 140);
+        }
+    }
+
+    document.getElementById('inputCanais').oninput = desenharBanner;
+    document.getElementById('inputEmpresa').oninput = desenharBanner;
+
+    document.getElementById('btnDownload').onclick = () => {
+        if(!jogoSelecionado) return alert("Selecione um jogo!");
+        const link = document.createElement('a');
+        link.download = `jogo-${jogoSelecionado.casa}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
+</script>
+</body>
+</html>
