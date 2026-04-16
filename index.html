@@ -12,7 +12,6 @@
         label { display: block; margin-bottom: 5px; font-size: 11px; color: #888; text-transform: uppercase; }
         input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #0c1221; color: white; outline: none; box-sizing: border-box; }
         
-        /* BANNER STORIES */
         .banner-preview { 
             width: 340px; 
             height: 604px; 
@@ -25,10 +24,9 @@
             display: none;
         }
 
-        /* VÍDEO RETANGULAR */
         .video-box {
             position: absolute;
-            top: 100px;
+            top: 105px;
             left: 20px;
             width: 300px;
             height: 168px;
@@ -36,35 +34,35 @@
             border: 2px solid #e50914;
             border-radius: 5px;
             z-index: 5;
+            overflow: hidden;
         }
-        video { width: 100%; height: 100%; object-fit: cover; }
+        iframe { width: 100%; height: 100%; border: none; }
 
-        /* TEXTOS AJUSTADOS PARA NÃO VAZAR */
         .txt-container { 
             position: absolute; 
-            top: 285px; 
+            top: 290px; 
             left: 20px; 
             width: 300px; 
-            text-shadow: 2px 2px 4px #000;
         }
-        .txt-melhores { font-size: 16px; font-weight: bold; margin: 0; line-height: 1.2; width: 100%; }
-        .txt-aqui { color: #e50914; font-size: 18px; font-weight: bold; margin: 5px 0 0 0; }
+        .txt-melhores { font-size: 15px; font-weight: bold; margin: 0; line-height: 1.2; text-shadow: 2px 2px 4px #000; }
+        .txt-aqui { color: #e50914; font-size: 18px; font-weight: bold; margin: 5px 0 0 0; text-shadow: 2px 2px 4px #000; }
         .txt-empresa { 
             color: #e50914; 
-            font-size: 30px; 
+            font-size: 28px; 
             font-weight: bold; 
             margin: 0; 
             text-transform: uppercase; 
-            word-wrap: break-word; /* Força quebra de linha se o nome for grande */
+            word-wrap: break-word; 
             line-height: 1;
+            text-shadow: 2px 2px 4px #000;
         }
 
         .sinopse-box {
             position: absolute;
-            top: 410px;
+            top: 415px;
             left: 20px;
             width: 300px;
-            height: 110px;
+            height: 105px;
             background: rgba(15, 23, 42, 0.9);
             padding: 10px;
             border-radius: 8px;
@@ -82,16 +80,14 @@
             width: 160px;
         }
 
-        .btn-download { width: 100%; padding: 15px; background: #e50914; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 15px; }
+        .btn-download { width: 100%; padding: 15px; background: #e50914; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 15px; display: block; text-align: center; text-decoration: none; }
         #sugestoes { position: absolute; width: 100%; background: #0c1221; z-index: 100; max-height: 200px; overflow-y: auto; display: none; border: 1px solid #333; }
         .sugestao-item { display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #222; }
-        .sugestao-item:hover { background: #1a1a1a; }
-        .sugestao-item img { width: 35px; height: 50px; margin-right: 10px; border-radius: 3px; }
     </style>
 </head>
 <body>
 
-    <h1 style="color:#e50914; text-transform: uppercase; letter-spacing: 2px;">Marketing Inove Vídeo</h1>
+    <h1 style="color:#e50914; text-transform: uppercase;">Inove Vídeo Marketing</h1>
 
     <div class="container">
         <div class="controls">
@@ -99,8 +95,8 @@
                 <label>Tipo de Conteúdo</label>
                 <select id="tipoBusca">
                     <option value="multi">Tudo (Filmes e Séries)</option>
-                    <option value="movie">Apenas Filmes 🎬</option>
-                    <option value="tv">Apenas Séries 🎞️</option>
+                    <option value="movie">Filmes</option>
+                    <option value="tv">Séries</option>
                 </select>
             </div>
             <div class="input-group">
@@ -112,34 +108,29 @@
                 <input type="text" id="inputPesquisa" placeholder="Ex: Peaky Blinders..." autocomplete="off">
                 <div id="sugestoes"></div>
             </div>
-            <button class="btn-download" id="btnDownload">📥 BAIXAR VÍDEO</button>
+            <a href="#" class="btn-download" id="btnDownload" target="_blank" style="display:none;">📥 BAIXAR VÍDEO</a>
         </div>
 
         <div class="banner-preview" id="banner">
             <div class="video-box" id="player"></div>
-            
             <div class="txt-container">
                 <p class="txt-melhores">Os melhores conteúdos você acompanha</p>
                 <p class="txt-aqui">Aqui na</p>
                 <p class="txt-empresa" id="bannerEmpresa">INOVE TV</p>
             </div>
-
             <div class="sinopse-box" id="bannerSinopse"></div>
-
             <img src="https://i.imgur.com/lhhqACi.png" class="logo-footer">
         </div>
     </div>
 
 <script>
     const TMDB_KEY = "fe9f67e134ddc97742f522aace9f85bb";
-    let videoUrlGlobal = "";
 
     inputPesquisa.oninput = async () => {
         const query = inputPesquisa.value;
         const tipo = document.getElementById('tipoBusca').value;
         if (query.length < 3) { document.getElementById('sugestoes').style.display = "none"; return; }
         
-        // Busca multi (filmes e séries)
         const res = await fetch(`https://api.themoviedb.org/3/search/${tipo}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`);
         const data = await res.json();
         const suggestions = document.getElementById('sugestoes');
@@ -152,25 +143,22 @@
             const nome = f.title || f.name;
             const mediaType = f.media_type || (f.title ? 'movie' : 'tv');
             
-            div.innerHTML = `<img src="${img}"><span>${nome}</span>`;
-            div.onclick = () => carregarBannerVideo(f.id, nome, f.overview, mediaType);
+            div.innerHTML = `<img src="${img}" style="width:30px; margin-right:10px;"><span>${nome}</span>`;
+            div.onclick = () => carregarTrailer(f.id, nome, f.overview, mediaType);
             suggestions.appendChild(div);
         });
     };
 
-    async function carregarBannerVideo(id, titulo, sinopse, tipo) {
+    async function carregarTrailer(id, titulo, sinopse, tipo) {
         document.getElementById('sugestoes').style.display = "none";
         document.getElementById('banner').style.display = "block";
         document.getElementById('bannerEmpresa').innerText = document.getElementById('inputNomeEmpresa').value;
         document.getElementById('bannerSinopse').innerText = sinopse || "Sinopse não disponível.";
 
-        // Buscar Trailer (agora aceita movie ou tv)
         const res = await fetch(`https://api.themoviedb.org/3/${tipo}/${id}/videos?api_key=${TMDB_KEY}&language=pt-BR`);
         const data = await res.json();
-        
-        let trailer = data.results.find(v => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"));
+        let trailer = data.results.find(v => v.site === "YouTube");
 
-        // Se não achar em PT-BR, busca no geral
         if (!trailer) {
             const resEn = await fetch(`https://api.themoviedb.org/3/${tipo}/${id}/videos?api_key=${TMDB_KEY}`);
             const dataEn = await resEn.json();
@@ -178,29 +166,19 @@
         }
 
         if (trailer) {
-            const videoId = trailer.key;
-            // Proxy para pegar o MP4 direto
-            videoUrlGlobal = `https://yewtu.be/latest_version?id=${videoId}&itag=22`;
-            
+            // Usando Embed oficial do YouTube para não dar erro de tela preta
             document.getElementById('player').innerHTML = `
-                <video controls autoplay muted loop playsinline>
-                    <source src="${videoUrlGlobal}" type="video/mp4">
-                    Seu navegador não suporta vídeos.
-                </video>`;
+                <iframe src="https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            `;
+            
+            // Botão de download configurado para um conversor externo estável
+            const btnDownload = document.getElementById('btnDownload');
+            btnDownload.style.display = "block";
+            btnDownload.href = `https://www.y2meta.com/pt/search?q=https://www.youtube.com/watch?v=${trailer.key}`;
         } else {
-            alert("Trailer não encontrado para este conteúdo.");
+            alert("Trailer não encontrado.");
         }
     }
-
-    document.getElementById('btnDownload').onclick = () => {
-        if (!videoUrlGlobal) { alert("Selecione um conteúdo primeiro!"); return; }
-        const a = document.createElement('a');
-        a.href = videoUrlGlobal;
-        a.download = `inove_video_${Date.now()}.mp4`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    };
 
     inputNomeEmpresa.oninput = () => {
         document.getElementById('bannerEmpresa').innerText = inputNomeEmpresa.value;
