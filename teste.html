@@ -2,274 +2,95 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inove TV | Marketing VIP</title>
+    <title>Gerador de Banner Inove</title>
     <style>
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background: #0b0b0b; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; max-width: 1000px; }
-        .controls { background: #141414; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; border: 1px solid #222; }
-        .input-group { margin-bottom: 15px; position: relative; }
-        label { display: block; margin-bottom: 5px; font-size: 11px; color: #888; text-transform: uppercase; }
-        input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #0c1221; color: white; outline: none; box-sizing: border-box; }
-        #sugestoes { position: absolute; width: 100%; background: #0c1221; border: 1px solid #333; z-index: 100; max-height: 200px; overflow-y: auto; display: none; border-radius: 0 0 8px 8px; }
-        .sugestao-item { display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #222; font-size: 13px; }
-        .sugestao-item img { width: 40px; height: 60px; margin-right: 12px; border-radius: 4px; object-fit: cover; }
-        .btn-download { width: 100%; padding: 15px; background: #e50914; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: all 0.3s; }
-        .btn-download:disabled { background: #555; cursor: not-allowed; }
-        canvas { max-width: 100%; width: 340px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        body { font-family: sans-serif; display: flex; gap: 20px; padding: 20px; background: #1a1a1a; color: white; }
+        .controls { width: 300px; display: flex; flex-direction: column; gap: 10px; }
+        canvas { border: 2px solid #555; max-width: 500px; height: auto; }
+        input, select, button { padding: 10px; border-radius: 5px; border: none; }
+        button { background: #25d366; color: white; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1 style="color:#e50914; letter-spacing: 2px; margin-bottom: 30px; text-transform: uppercase;">Marketing Inove</h1>
+<div class="controls">
+    <h2>Configurar Banner</h2>
+    <label>Modelo:</label>
+    <select id="modelo" onchange="renderizar()">
+        <option value="https://i.imgur.com/8Y3X4vC.jpg">Modelo Dark Purple</option>
+        <option value="https://i.imgur.com/your_other_bg.jpg">Modelo Red Fire</option>
+    </select>
 
-    <div class="container">
-        <div class="controls">
-            <div class="input-group">
-                <label>Tipo de Conteúdo</label>
-                <select id="tipoBusca"><option value="movie">Filme 🎬</option><option value="tv">Série 🎞️</option></select>
-            </div>
+    <input type="text" id="plano" placeholder="Ex: PLANO MENSAL" oninput="renderizar()">
+    <input type="text" id="preco" placeholder="Ex: 29,90" oninput="renderizar()">
+    <input type="text" id="whatsapp" placeholder="Seu WhatsApp" oninput="renderizar()">
+    
+    <label>Sua Logo (PNG):</label>
+    <input type="file" id="logoInput" accept="image/*" onchange="renderizar()">
 
-            <div class="input-group">
-                <label>Pesquisar Nome</label>
-                <input type="text" id="inputPesquisa" placeholder="Pesquise aqui..." autocomplete="off">
-                <div id="sugestoes"></div>
-            </div>
+    <button onclick="baixarBanner()">Baixar Banner</button>
+</div>
 
-            <div class="input-group">
-                <label>Nome da Empresa</label>
-                <input type="text" id="inputNomeEmpresa" value="Inove TV">
-            </div>
-
-            <div class="input-group">
-                <label>WhatsApp (Opcional)</label>
-                <input type="text" id="inputWhats" placeholder="Ex: 12 99720-8373">
-            </div>
-
-            <div class="input-group">
-                <label>Cor do Destaque</label>
-                <select id="corNomeEmpresa">
-                    <option value="#ffffff">Branco</option>
-                    <option value="#e50914" selected>Vermelho</option>
-                    <option value="#007bff">Azul</option>
-                    <option value="#ffc107">Amarelo</option>
-                </select>
-            </div>
-
-            <div class="input-group">
-                <label>Fundo do Banner</label>
-                <select id="selectFundo">
-                    <option value="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1080&auto=format&fit=crop">Fundo 1 (Padrão)</option>
-                    <option value="https://img.pikbest.com/backgrounds/20190423/new-movie-release-movie-theater-advertising-poster-background-image_1815063.jpg!w700wp">Fundo 2 (Azul)</option>
-                    <option value="https://i.imgur.com/Rri3RDa.jpeg">Fundo 3 (Cinza)</option>
-                </select>
-            </div>
-
-            <div class="input-group">
-                <label>Sua Logo (Canto Superior)</label>
-                <input type="file" id="inputLogoFile" accept="image/*">
-            </div>
-            
-            <button class="btn-download" id="btnDownload">Baixar Banner VIP</button>
-        </div>
-        <canvas id="bannerCanvas"></canvas>
-    </div>
+<canvas id="bannerCanvas" width="1080" height="1350"></canvas>
 
 <script>
-    const TMDB_KEY = "fe9f67e134ddc97742f522aace9f85bb";
-    const LOGO_INOVE = "https://i.imgur.com/lhhqACi.png"; 
-    const LOGO_ZAP = "https://static.vecteezy.com/system/resources/thumbnails/018/930/748/small/whatsapp-logo-whatsapp-icon-whatsapp-transparent-free-png.png";
-    const WEBHOOK_DISCORD = "https://discord.com/api/webhooks/1494375446794473583/YLBUQtYMopG5wuLYwxmQNZri0A9hkBKTpnbyHSaAJzGLEQLGA-avjdsNZa18IljmUSKt";
-
     const canvas = document.getElementById('bannerCanvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = 1080; canvas.height = 1920;
 
-    const inputPesquisa = document.getElementById('inputPesquisa');
-    const inputNomeEmpresa = document.getElementById('inputNomeEmpresa');
-    const inputWhats = document.getElementById('inputWhats');
-    const corNomeEmpresa = document.getElementById('corNomeEmpresa');
-    const selectFundo = document.getElementById('selectFundo');
-    const inputLogoFile = document.getElementById('inputLogoFile');
-    const divSugestoes = document.getElementById('sugestoes');
+    function renderizar() {
+        const imgFundo = new Image();
+        imgFundo.crossOrigin = "anonymous";
+        imgFundo.src = document.getElementById('modelo').value;
 
-    let filmeSelecionado = null;
-    let imgLogoRevenda = null;
-    const imgInove = new Image(); imgInove.crossOrigin = "anonymous"; imgInove.src = LOGO_INOVE;
-    const imgZap = new Image(); imgZap.crossOrigin = "anonymous"; imgZap.src = LOGO_ZAP;
-    let imgBackground = new Image();
+        imgFundo.onload = function() {
+            // 1. Desenha o Fundo
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(imgFundo, 0, 0, canvas.width, canvas.height);
 
-    function carregarFundo() {
-        imgBackground = new Image();
-        imgBackground.crossOrigin = "anonymous";
-        imgBackground.src = selectFundo.value;
-        imgBackground.onload = desenharBanner;
-    }
+            // 2. Estilo do Texto
+            ctx.fillStyle = "white";
+            ctx.textAlign = "center";
 
-    inputLogoFile.onchange = (e) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            imgLogoRevenda = new Image();
-            imgLogoRevenda.src = event.target.result;
-            imgLogoRevenda.onload = desenharBanner;
-        };
-        reader.readAsDataURL(e.target.files[0]);
-    };
+            // Desenhar Plano
+            ctx.font = "bold 50px Arial";
+            ctx.fillText(document.getElementById('plano').value.toUpperCase(), 540, 900);
 
-    selectFundo.onchange = carregarFundo;
-    inputNomeEmpresa.oninput = desenharBanner;
-    inputWhats.oninput = desenharBanner;
-    corNomeEmpresa.onchange = desenharBanner;
-    carregarFundo();
+            // Desenhar Preço
+            ctx.fillStyle = "#ff00ff"; // Cor rosa/neon
+            ctx.font = "bold 180px Arial";
+            ctx.fillText("R$ " + document.getElementById('preco').value, 540, 1100);
 
-    // FUNÇÃO QUE PROMETE O ENVIO (Mobile Friendly)
-    function enviarNotificacaoDiscord() {
-        return new Promise((resolve, reject) => {
-            if (!filmeSelecionado) return resolve();
+            // Desenhar WhatsApp
+            ctx.fillStyle = "white";
+            ctx.font = "bold 40px Arial";
+            ctx.fillText("Assine via WhatsApp: " + document.getElementById('whatsapp').value, 540, 1250);
 
-            canvas.toBlob(async (blob) => {
-                if (!blob) return resolve();
-
-                const formData = new FormData();
-                const payload = {
-                    username: "Inove Marketing - Monitor",
-                    embeds: [{
-                        title: "🎨 Novo Banner Gerado!",
-                        color: 15007764,
-                        image: { url: "attachment://banner.png" },
-                        fields: [
-                            { name: "🎬 Conteúdo", value: `**${filmeSelecionado.title || filmeSelecionado.name}**`, inline: true },
-                            { name: "🏢 Empresa", value: inputNomeEmpresa.value || "Inove TV", inline: true },
-                            { name: "📱 WhatsApp", value: inputWhats.value || "Não informado", inline: true }
-                        ],
-                        footer: { text: "Inove Nova Era - Log de Acessos" }
-                    }]
+            // 3. Desenhar Logo (se houver)
+            const logoFile = document.getElementById('logoInput').files[0];
+            if (logoFile) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const logoImg = new Image();
+                    logoImg.onload = function() {
+                        ctx.drawImage(logoImg, 440, 100, 200, 200); // Posição da logo
+                    }
+                    logoImg.src = event.target.result;
                 };
-
-                formData.append('payload_json', JSON.stringify(payload));
-                formData.append('file', blob, 'banner.png');
-
-                try {
-                    await fetch(WEBHOOK_DISCORD, { method: 'POST', body: formData });
-                    console.log("Enviado ao Discord!");
-                    resolve();
-                } catch (err) {
-                    console.error("Erro no envio:", err);
-                    resolve(); // Resolve mesmo com erro para não travar o download do usuário
-                }
-            }, 'image/png');
-        });
-    }
-
-    function desenharBanner() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (imgBackground.complete) ctx.drawImage(imgBackground, 0, 0, canvas.width, canvas.height);
-        if (!filmeSelecionado) {
-            ctx.fillStyle = "#fff"; ctx.font = "40px sans-serif"; ctx.textAlign = "center";
-            ctx.fillText("Escolha um conteúdo para a prévia", 540, 960);
-            return;
-        }
-
-        const imgPoster = new Image(); imgPoster.crossOrigin = "anonymous";
-        imgPoster.src = `https://image.tmdb.org/t/p/w780${filmeSelecionado.poster_path}`;
-        
-        imgPoster.onload = () => {
-            ctx.save();
-            ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 40;
-            ctx.drawImage(imgPoster, 80, 280, 460, 690); 
-            ctx.restore();
-
-            if (imgLogoRevenda) {
-                const rW = 250, rH = 250;
-                const prop = imgLogoRevenda.width / imgLogoRevenda.height;
-                let finalW = rW, finalH = rW / prop;
-                if (finalH > rH) { finalH = rH; finalW = rH * prop; }
-                ctx.drawImage(imgLogoRevenda, 1000 - finalW, 80, finalW, finalH);
-            }
-
-            ctx.textAlign = "left"; ctx.save();
-            ctx.shadowColor = "rgba(0,0,0,1)"; ctx.shadowBlur = 15;
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 55px sans-serif"; ctx.fillText("Os melhores", 580, 380);
-            ctx.font = "bold 75px sans-serif"; ctx.fillText("Filmes &", 580, 460);
-            ctx.fillText("Séries você", 580, 540);
-            ctx.font = "bold 55px sans-serif"; ctx.fillText("acompanha", 580, 620);
-            ctx.fillStyle = corNomeEmpresa.value; 
-            ctx.fillText("Aqui na", 580, 700);
-            ctx.font = "bold 85px sans-serif"; 
-            ctx.fillText(inputNomeEmpresa.value || "Inove TV", 580, 800);
-
-            if(inputWhats.value && imgZap.complete) {
-                const zapSize = 60;
-                ctx.drawImage(imgZap, 580, 835, zapSize, zapSize);
-                ctx.fillStyle = "#fff"; ctx.font = "bold 45px sans-serif";
-                ctx.fillText(inputWhats.value, 580 + zapSize + 15, 880);
-            }
-            ctx.restore();
-
-            ctx.fillStyle = "#111827"; ctx.fillRect(80, 1000, 460, 110);
-            ctx.fillStyle = "#fff"; 
-            const nome = (filmeSelecionado.title || filmeSelecionado.name).toUpperCase();
-            let fSize = nome.length > 20 ? 28 : 32;
-            ctx.font = `bold ${fSize}px sans-serif`; ctx.textAlign = "center";
-            wrapText(ctx, nome, 310, 1060, 430, fSize + 5);
-
-            ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
-            ctx.beginPath(); ctx.roundRect(80, 1140, 920, 380, 15); ctx.fill();
-            ctx.textAlign = "left"; ctx.fillStyle = "#cbd5e1"; ctx.font = "36px sans-serif";
-            wrapTextTruncate(ctx, filmeSelecionado.overview || "", 120, 1210, 840, 48, 1480);
-
-            if (imgInove.complete) {
-                const iW = 600, iH = 200;
-                const prop = imgInove.naturalWidth / imgInove.naturalHeight;
-                let nW = iW, nH = iW / prop;
-                if (nH > iH) { nH = iH; nW = iH * prop; }
-                ctx.drawImage(imgInove, 540 - (nW/2), 1700, nW, nH); 
+                reader.readAsDataURL(logoFile);
             }
         };
     }
 
-    function wrapText(context, text, x, y, maxWidth, lineHeight) { var words = text.split(' '), line = ''; for(var n = 0; n < words.length; n++) { var testLine = line + words[n] + ' '; if (context.measureText(testLine).width > maxWidth && n > 0) { context.fillText(line, x, y); line = words[n] + ' '; y += lineHeight; } else { line = testLine; } } context.fillText(line, x, y); }
-    function wrapTextTruncate(context, text, x, y, maxWidth, lineHeight, maxY) { var words = text.split(' '), line = ''; var currentY = y; for(var n = 0; n < words.length; n++) { var testLine = line + words[n] + ' '; if (context.measureText(testLine).width > maxWidth && n > 0) { if (currentY + lineHeight > maxY) { context.fillText(line.trim() + "...", x, currentY); return; } context.fillText(line, x, currentY); line = words[n] + ' '; currentY += lineHeight; } else { line = testLine; } } context.fillText(line, x, currentY); }
-
-    inputPesquisa.oninput = async () => {
-        const query = inputPesquisa.value;
-        if (query.length < 3) return;
-        const res = await fetch(`https://api.themoviedb.org/3/search/${document.getElementById('tipoBusca').value}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`);
-        const data = await res.json();
-        divSugestoes.innerHTML = ""; divSugestoes.style.display = "block";
-        data.results.slice(0, 5).forEach(f => {
-            const div = document.createElement('div'); div.className = "sugestao-item";
-            const capa = f.poster_path ? `https://image.tmdb.org/t/p/w92${f.poster_path}` : 'https://via.placeholder.com/92x138';
-            div.innerHTML = `<img src="${capa}"><span>${f.title || f.name}</span>`;
-            div.onclick = () => { filmeSelecionado = f; divSugestoes.style.display = "none"; inputPesquisa.value = f.title || f.name; desenharBanner(); };
-            divSugestoes.appendChild(div);
-        });
-    };
-
-    // BOTÃO COM TRAVA DE ESPERA PARA CELULAR
-    document.getElementById('btnDownload').onclick = async function() {
-        if(!filmeSelecionado) { alert("Escolha um filme primeiro!"); return; }
-        
-        const btn = this;
-        btn.innerText = "AGUARDE... ENVIANDO";
-        btn.disabled = true;
-
-        // Aguarda o envio para o Discord terminar
-        await enviarNotificacaoDiscord();
-
-        // Inicia o download
-        const link = document.createElement('a'); 
-        link.download = (filmeSelecionado.title || filmeSelecionado.name) + '.png';
-        link.href = canvas.toDataURL('image/png', 1.0); 
+    function baixarBanner() {
+        const link = document.createElement('a');
+        link.download = 'meu-banner-inove.png';
+        link.href = canvas.toDataURL('image/png');
         link.click();
+    }
 
-        // Volta o botão ao normal
-        setTimeout(() => {
-            btn.innerText = "BAIXAR BANNER VIP";
-            btn.disabled = false;
-        }, 1000);
-    };
+    // Inicializa
+    window.onload = renderizar;
 </script>
+
 </body>
 </html>
