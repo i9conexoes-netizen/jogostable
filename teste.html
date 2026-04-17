@@ -2,94 +2,159 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Gerador de Banner Inove</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inove - Gerador Infinito</title>
     <style>
-        body { font-family: sans-serif; display: flex; gap: 20px; padding: 20px; background: #1a1a1a; color: white; }
-        .controls { width: 300px; display: flex; flex-direction: column; gap: 10px; }
-        canvas { border: 2px solid #555; max-width: 500px; height: auto; }
-        input, select, button { padding: 10px; border-radius: 5px; border: none; }
-        button { background: #25d366; color: white; cursor: pointer; font-weight: bold; }
+        :root { --primary: #00ff88; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { display: flex; gap: 30px; max-width: 1200px; width: 100%; flex-wrap: wrap; justify-content: center; }
+        
+        /* Painel de Controle */
+        .panel { background: #1a1a1a; padding: 25px; border-radius: 15px; width: 350px; border: 1px solid #333; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.9em; color: #aaa; }
+        input, select { width: 100%; padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; }
+        
+        .btn-random { background: #6200ea; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; transition: 0.3s; }
+        .btn-download { background: #00c853; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-random:hover { background: #7c4dff; }
+
+        /* Canvas */
+        canvas { border-radius: 10px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
 
-<div class="controls">
-    <h2>Configurar Banner</h2>
-    <label>Modelo:</label>
-    <select id="modelo" onchange="renderizar()">
-        <option value="https://i.imgur.com/8Y3X4vC.jpg">Modelo Dark Purple</option>
-        <option value="https://i.imgur.com/your_other_bg.jpg">Modelo Red Fire</option>
-    </select>
+    <h1 style="color: var(--primary)">Inove Banner Pro</h1>
+    <p>Gere modelos exclusivos para seus revendedores em um clique.</p>
 
-    <input type="text" id="plano" placeholder="Ex: PLANO MENSAL" oninput="renderizar()">
-    <input type="text" id="preco" placeholder="Ex: 29,90" oninput="renderizar()">
-    <input type="text" id="whatsapp" placeholder="Seu WhatsApp" oninput="renderizar()">
-    
-    <label>Sua Logo (PNG):</label>
-    <input type="file" id="logoInput" accept="image/*" onchange="renderizar()">
+    <div class="container">
+        <div class="panel">
+            <button class="btn-random" onclick="gerarEstiloAleatorio()">🎲 Gerar Estilo Aleatório</button>
+            
+            <div class="input-group">
+                <label>Nome da Empresa</label>
+                <input type="text" id="nomeEmpresa" value="INOVE STREAMING" oninput="desenhar()">
+            </div>
+            <div class="input-group">
+                <label>Valor (R$)</label>
+                <input type="text" id="valor" value="29,90" oninput="desenhar()">
+            </div>
+            <div class="input-group">
+                <label>WhatsApp</label>
+                <input type="text" id="whatsapp" value="(11) 99999-9999" oninput="desenhar()">
+            </div>
+            <div class="input-group">
+                <label>Frase de Impacto</label>
+                <input type="text" id="frase" value="Cansado de pagar caro?" oninput="desenhar()">
+            </div>
 
-    <button onclick="baixarBanner()">Baixar Banner</button>
-</div>
+            <button class="btn-download" onclick="baixar()">📥 Baixar Banner</button>
+        </div>
 
-<canvas id="bannerCanvas" width="1080" height="1350"></canvas>
+        <canvas id="banner" width="1080" height="1350"></canvas>
+    </div>
 
 <script>
-    const canvas = document.getElementById('bannerCanvas');
+    const canvas = document.getElementById('banner');
     const ctx = canvas.getContext('2d');
 
-    function renderizar() {
-        const imgFundo = new Image();
-        imgFundo.crossOrigin = "anonymous";
-        imgFundo.src = document.getElementById('modelo').value;
+    // Configurações de "Infinitos Modelos"
+    const paletas = [
+        { bg: ['#0f0c29', '#302b63', '#24243e'], accent: '#00d2ff', text: '#ffffff' }, // Dark Blue
+        { bg: ['#11998e', '#38ef7d'], accent: '#ffffff', text: '#ffffff' },             // Green Neon
+        { bg: ['#833ab4', '#fd1d1d', '#fcb045'], accent: '#ffffff', text: '#ffffff' }, // Instagram Style
+        { bg: ['#000000', '#434343'], accent: '#ff0055', text: '#ffffff' },             // Black & Pink
+        { bg: ['#1e1e2f', '#2a2a40'], accent: '#7289da', text: '#ffffff' },             // Discord Style
+        { bg: ['#4b0082', '#000000'], accent: '#00ff88', text: '#ffffff' }              // Purple Matrix
+    ];
 
-        imgFundo.onload = function() {
-            // 1. Desenha o Fundo
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(imgFundo, 0, 0, canvas.width, canvas.height);
+    let paletaAtual = paletas[0];
 
-            // 2. Estilo do Texto
-            ctx.fillStyle = "white";
-            ctx.textAlign = "center";
-
-            // Desenhar Plano
-            ctx.font = "bold 50px Arial";
-            ctx.fillText(document.getElementById('plano').value.toUpperCase(), 540, 900);
-
-            // Desenhar Preço
-            ctx.fillStyle = "#ff00ff"; // Cor rosa/neon
-            ctx.font = "bold 180px Arial";
-            ctx.fillText("R$ " + document.getElementById('preco').value, 540, 1100);
-
-            // Desenhar WhatsApp
-            ctx.fillStyle = "white";
-            ctx.font = "bold 40px Arial";
-            ctx.fillText("Assine via WhatsApp: " + document.getElementById('whatsapp').value, 540, 1250);
-
-            // 3. Desenhar Logo (se houver)
-            const logoFile = document.getElementById('logoInput').files[0];
-            if (logoFile) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const logoImg = new Image();
-                    logoImg.onload = function() {
-                        ctx.drawImage(logoImg, 440, 100, 200, 200); // Posição da logo
-                    }
-                    logoImg.src = event.target.result;
-                };
-                reader.readAsDataURL(logoFile);
-            }
-        };
+    function gerarEstiloAleatorio() {
+        paletaAtual = paletas[Math.floor(Math.random() * paletas.length)];
+        desenhar();
     }
 
-    function baixarBanner() {
+    function desenhar() {
+        // 1. Fundo com Gradiente
+        const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        paletaAtual.bg.forEach((cor, i) => {
+            grad.addColorStop(i / (paletaAtual.bg.length - 1), cor);
+        });
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 2. Adicionar Ruído/Textura (Para parecer profissional)
+        ctx.globalCompositeOperation = 'overlay';
+        for (let i = 0; i < 100; i++) {
+            ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`;
+            ctx.beginPath();
+            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalCompositeOperation = 'source-over';
+
+        // 3. Textos
+        const nome = document.getElementById('nomeEmpresa').value.toUpperCase();
+        const valor = document.getElementById('valor').value;
+        const zap = document.getElementById('whatsapp').value;
+        const frase = document.getElementById('frase').value;
+
+        // Nome da Empresa (Topo)
+        ctx.fillStyle = paletaAtual.accent;
+        ctx.font = "bold 40px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(nome, 540, 80);
+
+        // Frase Principal
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 80px Arial";
+        ctx.fillText(frase, 540, 300);
+
+        // Círculo Central de Preço
+        ctx.beginPath();
+        ctx.strokeStyle = paletaAtual.accent;
+        ctx.lineWidth = 15;
+        ctx.arc(540, 700, 250, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = "#fff";
+        ctx.font = "60px Arial";
+        ctx.fillText("APENAS", 540, 600);
+
+        ctx.fillStyle = paletaAtual.accent;
+        ctx.font = "bold 150px Arial";
+        ctx.fillText("R$ " + valor, 540, 750);
+
+        ctx.fillStyle = "#fff";
+        ctx.font = "50px Arial";
+        ctx.fillText("POR MÊS", 540, 850);
+
+        // Rodapé / Zap
+        ctx.fillStyle = paletaAtual.accent;
+        ctx.fillRect(200, 1150, 680, 100);
+        
+        ctx.fillStyle = "#000";
+        ctx.font = "bold 50px Arial";
+        ctx.fillText("WHATSAPP: " + zap, 540, 1215);
+
+        // Overlay de Brilho (Efeito de iluminação)
+        const radialGrad = ctx.createRadialGradient(540, 675, 100, 540, 675, 600);
+        radialGrad.addColorStop(0, 'rgba(255,255,255,0.1)');
+        radialGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = radialGrad;
+        ctx.fillRect(0,0, canvas.width, canvas.height);
+    }
+
+    function baixar() {
         const link = document.createElement('a');
-        link.download = 'meu-banner-inove.png';
-        link.href = canvas.toDataURL('image/png');
+        link.download = `banner-${document.getElementById('nomeEmpresa').value}.png`;
+        link.href = canvas.toDataURL();
         link.click();
     }
 
-    // Inicializa
-    window.onload = renderizar;
+    window.onload = desenhar;
 </script>
 
 </body>
