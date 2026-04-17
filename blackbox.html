@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generator BlackBox</title>
+    <title>BlackBox Gerador</title>
     <style>
         :root { --primary: #e50914; --bg: #070a13; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
@@ -12,12 +12,16 @@
         .input-group { margin-bottom: 15px; position: relative; }
         label { display: block; margin-bottom: 5px; font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: bold; }
         input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #080b14; color: white; box-sizing: border-box; outline: none; }
-        input:focus { border-color: var(--primary); }
+        .btn-download { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
+        
+        /* Ajuste para o Canvas e Prévia */
+        #canvas-wrapper { position: relative; width: 380px; height: 675px; border-radius: 15px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.7); }
+        canvas { width: 100%; height: 100%; display: block; position: relative; z-index: 2; background: transparent; }
+        #bg-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; object-fit: cover; filter: blur(15px) brightness(0.4); transform: scale(1.1); }
+        
         #sugestoes { position: absolute; width: 100%; background: #111625; border: 1px solid #334155; z-index: 100; max-height: 200px; overflow-y: auto; display: none; border-radius: 10px; }
         .sugestao-item { display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #1e293b; }
-        .sugestao-item img { width: 35px; height: 50px; margin-right: 12px; border-radius: 4px; object-fit: cover; }
-        .btn-download { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
-        canvas { max-width: 100%; width: 380px; border-radius: 15px; box-shadow: 0 25px 50px rgba(0,0,0,0.7); background: #000; }
+        .sugestao-item img { width: 35px; height: 50px; margin-right: 12px; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -48,7 +52,7 @@
             </div>
             <div class="input-group">
                 <label>Nome da Empresa (Topo)</label>
-                <input type="text" id="inputNomeEmpresa" value="BLACK BOX" placeholder="Apague para usar a logo no topo">
+                <input type="text" id="inputNomeEmpresa" value="BLACK BOX">
             </div>
             <div class="input-group">
                 <label>WhatsApp</label>
@@ -57,25 +61,24 @@
             <button class="btn-download" id="btnDownload">Baixar Banner VIP</button>
         </div>
         
-        <canvas id="bannerCanvas"></canvas>
+        <div id="canvas-wrapper">
+            <img id="bg-preview" src="" alt="">
+            <canvas id="bannerCanvas"></canvas>
+        </div>
     </div>
 
 <script>
     const TMDB_KEY = "fe9f67e134ddc97742f522aace9f85bb";
     const canvas = document.getElementById('bannerCanvas');
     const ctx = canvas.getContext('2d');
+    const bgPreview = document.getElementById('bg-preview');
     canvas.width = 1080; canvas.height = 1920;
 
     let filmeSelecionado = null;
     let imgLogoUsuario = null;
 
-    const imgZap = new Image();
-    imgZap.crossOrigin = "anonymous";
-    imgZap.src = "https://i.imgur.com/S9agLzQ.png";
-
-    const imgDevices = new Image();
-    imgDevices.crossOrigin = "anonymous";
-    imgDevices.src = "https://i.imgur.com/lLVMCIw.png";
+    const imgZap = new Image(); imgZap.crossOrigin = "anonymous"; imgZap.src = "https://i.imgur.com/S9agLzQ.png";
+    const imgDevices = new Image(); imgDevices.crossOrigin = "anonymous"; imgDevices.src = "https://i.imgur.com/lLVMCIw.png";
 
     function drawFitText(context, text, x, y, maxWidth, baseSize, fontWeight = "900") {
         let size = baseSize;
@@ -124,91 +127,65 @@
         const empresa = document.getElementById('inputNomeEmpresa').value.trim().toUpperCase();
         const whats = document.getElementById('inputWhats').value;
 
+        const posterUrl = `https://image.tmdb.org/t/p/original${filmeSelecionado.poster_path}`;
+        bgPreview.src = posterUrl; // Atualiza o fundo CSS para a prévia
+
         const imgPoster = new Image();
-        // O crossOrigin é fundamental para o filtro funcionar no mobile
         imgPoster.crossOrigin = "anonymous";
-        imgPoster.src = `https://image.tmdb.org/t/p/original${filmeSelecionado.poster_path}`;
+        imgPoster.src = posterUrl;
 
         imgPoster.onload = () => {
-            // Limpa o canvas antes de tudo
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // CORREÇÃO PARA MOBILE: 
-            // 1. Resetar o filtro antes de aplicar
-            ctx.filter = 'none';
+            // 1. FUNDO (Desenhado sem blur no canvas, o blur é aplicado no download via script)
+            // Para garantir que o download tenha blur, usamos uma técnica de redundância:
             ctx.save();
-            
-            // 2. Aplicar o filtro e desenhar o fundo
-            // Se o blur(20px) ainda falhar no seu celular, tente diminuir para 10px ou 15px
-            ctx.filter = "blur(20px) brightness(0.35)";
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0,0, canvas.width, canvas.height);
+            ctx.globalAlpha = 0.4;
+            // Desenha a imagem de fundo esticada (o blur será aplicado no final)
             ctx.drawImage(imgPoster, -100, -100, canvas.width + 200, canvas.height + 200);
             ctx.restore();
-            
-            // 3. Resetar o filtro para o restante dos elementos (Obrigatório para mobile)
-            ctx.filter = 'none';
+            ctx.globalAlpha = 1.0;
 
             // Cabeçalho
-            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.fillStyle = "rgba(0,0,0,0.6)";
             ctx.fillRect(0, 0, canvas.width, 240);
-            ctx.textAlign = "center";
-            ctx.fillStyle = "#fff";
-            ctx.font = "bold 40px sans-serif";
+            ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.font = "bold 40px sans-serif";
             ctx.fillText("DISPONÍVEL EM NOSSO APLICATIVO", 540, 75);
             if(imgDevices.complete) ctx.drawImage(imgDevices, 540 - 200, 95, 400, 120);
 
             // Poster lateral
             ctx.save();
-            ctx.shadowColor = "rgba(0,0,0,0.8)";
-            ctx.shadowBlur = 40;
+            ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 40;
             ctx.drawImage(imgPoster, 70, 300, 450, 675);
             ctx.restore();
 
             // Textos Chamada
-            ctx.textAlign = "left";
-            ctx.fillStyle = "#fff";
-            ctx.font = "bold 50px sans-serif";
+            ctx.textAlign = "left"; ctx.fillStyle = "#fff"; ctx.font = "bold 50px sans-serif";
             const prefixo = tipo === 'movie' ? 'Os melhores' : 'As melhores';
             const categoria = tipo === 'movie' ? 'Filmes você' : 'Séries você';
             ctx.fillText(prefixo, 560, 450);
-            ctx.fillStyle = cor;
-            drawFitText(ctx, categoria, 560, 540, 480, 85, "900");
-            ctx.fillStyle = "#fff";
-            ctx.font = "400 45px sans-serif";
-            ctx.fillText("acompanha aqui na", 560, 610);
+            ctx.fillStyle = cor; drawFitText(ctx, categoria, 560, 540, 480, 85, "900");
+            ctx.fillStyle = "#fff"; ctx.font = "400 45px sans-serif"; ctx.fillText("acompanha aqui na", 560, 610);
             
             if (empresa !== "") {
-                ctx.fillStyle = cor;
-                drawFitText(ctx, empresa, 560, 740, 480, 110, "900");
+                ctx.fillStyle = cor; drawFitText(ctx, empresa, 560, 740, 480, 110, "900");
             } else if (imgLogoUsuario) {
                 const ratio = Math.min(450 / imgLogoUsuario.width, 180 / imgLogoUsuario.height);
                 ctx.drawImage(imgLogoUsuario, 560, 640, imgLogoUsuario.width * ratio, imgLogoUsuario.height * ratio);
             }
 
             // Faixa Título
-            ctx.fillStyle = "rgba(0,0,0,0.9)";
-            ctx.fillRect(70, 1020, 940, 140);
-            ctx.fillStyle = "#fff";
-            ctx.textAlign = "center";
+            ctx.fillStyle = "rgba(0,0,0,0.9)"; ctx.fillRect(70, 1020, 940, 140);
+            ctx.fillStyle = "#fff"; ctx.textAlign = "center";
             drawFitText(ctx, (filmeSelecionado.title || filmeSelecionado.name).toUpperCase(), 540, 1110, 880, 60, "bold");
 
             // Sinopse
-            ctx.fillStyle = "rgba(15, 23, 42, 0.8)";
+            ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
             ctx.beginPath(); ctx.roundRect(70, 1190, 940, 400, 20); ctx.fill();
             ctx.textAlign = "left"; ctx.fillStyle = "#e2e8f0"; ctx.font = "42px sans-serif";
             wrapText(ctx, filmeSelecionado.overview || "Sinopse não disponível.", 110, 1260, 860, 55, 6);
-
-            // LOGO NO RODAPÉ
-            if (imgLogoUsuario) {
-                const ratioIcon = Math.min(300 / imgLogoUsuario.width, 120 / imgLogoUsuario.height);
-                const nw = imgLogoUsuario.width * ratioIcon;
-                const nh = imgLogoUsuario.height * ratioIcon;
-                ctx.drawImage(imgLogoUsuario, 1010 - nw, 1650, nw, nh);
-            } else if (empresa !== "") {
-                ctx.textAlign = "right";
-                ctx.fillStyle = "rgba(255,255,255,0.5)";
-                ctx.font = "bold 40px sans-serif";
-                ctx.fillText(empresa, 1010, 1750);
-            }
 
             // WhatsApp
             if(whats) {
@@ -224,6 +201,7 @@
         };
     }
 
+    // Busca TMDB
     inputPesquisa.oninput = async () => {
         const query = inputPesquisa.value;
         if (query.length < 3) return;
@@ -241,11 +219,31 @@
         });
     };
 
+    // FUNÇÃO DE DOWNLOAD CORRIGIDA PARA CELULAR
     document.getElementById('btnDownload').onclick = () => {
-        const link = document.createElement('a');
-        link.download = 'banner_pro_final.png';
-        link.href = canvas.toDataURL('image/png', 1.0);
-        link.click();
+        if(!filmeSelecionado) return;
+        
+        // Criamos um canvas temporário apenas para o download para forçar o blur no arquivo final
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = 1080; tempCanvas.height = 1920;
+        const tCtx = tempCanvas.getContext('2d');
+        
+        // Aplica o filtro de blur no canvas de saída
+        tCtx.filter = "blur(20px) brightness(0.4)";
+        const imgFundo = new Image();
+        imgFundo.crossOrigin = "anonymous";
+        imgFundo.src = `https://image.tmdb.org/t/p/original${filmeSelecionado.poster_path}`;
+        
+        imgFundo.onload = () => {
+            tCtx.drawImage(imgFundo, -100, -100, 1280, 2120);
+            tCtx.filter = "none";
+            tCtx.drawImage(canvas, 0, 0); // Desenha tudo o que já fizemos por cima
+            
+            const link = document.createElement('a');
+            link.download = 'banner_blackbox.png';
+            link.href = tempCanvas.toDataURL('image/png', 1.0);
+            link.click();
+        };
     };
 
     [inputNomeEmpresa, inputWhats, corDestaque, tipoBusca].forEach(el => {
