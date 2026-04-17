@@ -125,15 +125,27 @@
         const whats = document.getElementById('inputWhats').value;
 
         const imgPoster = new Image();
+        // O crossOrigin é fundamental para o filtro funcionar no mobile
         imgPoster.crossOrigin = "anonymous";
         imgPoster.src = `https://image.tmdb.org/t/p/original${filmeSelecionado.poster_path}`;
 
         imgPoster.onload = () => {
-            // Fundo
+            // Limpa o canvas antes de tudo
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // CORREÇÃO PARA MOBILE: 
+            // 1. Resetar o filtro antes de aplicar
+            ctx.filter = 'none';
             ctx.save();
+            
+            // 2. Aplicar o filtro e desenhar o fundo
+            // Se o blur(20px) ainda falhar no seu celular, tente diminuir para 10px ou 15px
             ctx.filter = "blur(20px) brightness(0.35)";
             ctx.drawImage(imgPoster, -100, -100, canvas.width + 200, canvas.height + 200);
             ctx.restore();
+            
+            // 3. Resetar o filtro para o restante dos elementos (Obrigatório para mobile)
+            ctx.filter = 'none';
 
             // Cabeçalho
             ctx.fillStyle = "rgba(0,0,0,0.5)";
@@ -164,7 +176,6 @@
             ctx.font = "400 45px sans-serif";
             ctx.fillText("acompanha aqui na", 560, 610);
             
-            // PRIORIDADE NO TOPO: Texto > Logo
             if (empresa !== "") {
                 ctx.fillStyle = cor;
                 drawFitText(ctx, empresa, 560, 740, 480, 110, "900");
@@ -186,14 +197,13 @@
             ctx.textAlign = "left"; ctx.fillStyle = "#e2e8f0"; ctx.font = "42px sans-serif";
             wrapText(ctx, filmeSelecionado.overview || "Sinopse não disponível.", 110, 1260, 860, 55, 6);
 
-            // LOGO NO RODAPÉ (Sempre aparece se carregada)
+            // LOGO NO RODAPÉ
             if (imgLogoUsuario) {
                 const ratioIcon = Math.min(300 / imgLogoUsuario.width, 120 / imgLogoUsuario.height);
                 const nw = imgLogoUsuario.width * ratioIcon;
                 const nh = imgLogoUsuario.height * ratioIcon;
                 ctx.drawImage(imgLogoUsuario, 1010 - nw, 1650, nw, nh);
             } else if (empresa !== "") {
-                // Se não tem logo, põe o nome da empresa discreto no rodapé também
                 ctx.textAlign = "right";
                 ctx.fillStyle = "rgba(255,255,255,0.5)";
                 ctx.font = "bold 40px sans-serif";
