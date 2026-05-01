@@ -29,7 +29,6 @@
             width: 100%;
             max-width: 400px;
             border: 1px solid #222;
-            position: relative;
         }
 
         .history-card {
@@ -51,8 +50,6 @@
             margin-bottom: 20px;
         }
 
-        h3 { font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-
         .form-group { margin-bottom: 15px; position: relative; }
 
         label {
@@ -73,20 +70,17 @@
             outline: none;
         }
 
-        input:focus, select:focus, textarea:focus { border-color: #e50914; }
+        input:focus { border-color: #e50914; }
 
         #sugestoes {
             position: absolute;
             width: 100%;
             background: #1a1a1a;
             border: 1px solid #333;
-            border-top: none;
             z-index: 100;
             max-height: 200px;
             overflow-y: auto;
-            border-radius: 0 0 8px 8px;
             display: none;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
 
         .sugestao-item {
@@ -99,15 +93,7 @@
 
         .sugestao-item:hover { background: #252525; }
 
-        .sugestao-item img {
-            width: 35px;
-            height: 50px;
-            object-fit: cover;
-            margin-right: 10px;
-            border-radius: 4px;
-        }
-
-        .sugestao-item div { font-size: 13px; }
+        .sugestao-item img { width: 35px; height: 50px; margin-right: 10px; border-radius: 4px; }
 
         button {
             width: 100%;
@@ -117,21 +103,13 @@
             border: none;
             border-radius: 8px;
             font-weight: bold;
-            font-size: 16px;
             cursor: pointer;
             transition: 0.3s;
-            margin-top: 10px;
         }
 
-        button:hover { background-color: #b20710; transform: translateY(-2px); }
-        button:disabled { background-color: #444; cursor: not-allowed; }
+        button:hover { background-color: #b20710; }
 
-        #status {
-            text-align: center;
-            margin-top: 15px;
-            font-weight: bold;
-            font-size: 14px;
-        }
+        #status { text-align: center; margin-top: 15px; font-weight: bold; }
 
         .history-item {
             background: #1a1a1a;
@@ -142,12 +120,7 @@
             font-size: 13px;
         }
 
-        .history-item small { color: #777; display: block; margin-top: 5px; }
-        .history-item .title { font-weight: bold; color: #fff; }
-        .history-item .tag { color: #e50914; font-size: 11px; text-transform: uppercase; }
-
         ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #141414; }
         ::-webkit-scrollbar-thumb { background: #e50914; border-radius: 10px; }
     </style>
 </head>
@@ -158,7 +131,7 @@
     
     <form id="formInove">
         <div class="form-group">
-            <label>Tipo:</label>
+            <label>Tipo de Solicitação:</label>
             <select id="tipo">
                 <option value="PEDIDO">Novo Pedido 🍿</option>
                 <option value="CORRECAO">Informar Correção ⚠️</option>
@@ -168,169 +141,142 @@
         <div class="form-group">
             <label>Categoria:</label>
             <select id="categoria">
-                <option value="Filmes 🎬">Filmes</option>
-                <option value="Séries 🎞️">Séries</option>
-                <option value="Canais 📺">Canais</option>
+                <option value="FILME">Filmes</option>
+                <option value="SÉRIE">Séries</option>
+                <option value="CANAIS">Canais</option>
             </select>
         </div>
 
         <div class="form-group">
-            <label>Seu Usuario do Painel (se colocar errado o pedido n é encaminhado):</label>
+            <label>Seu Usuário do Painel:</label>
             <input type="text" id="revendedor" placeholder="Usuario" required>
         </div>
 
         <div class="form-group">
             <label>Título do Conteúdo:</label>
-            <input type="text" id="titulo" placeholder="Digite para buscar..." autocomplete="off" required>
+            <input type="text" id="titulo" placeholder="Digite o nome..." autocomplete="off" required>
             <div id="sugestoes"></div>
         </div>
 
         <div class="form-group">
-            <label>Observação:</label>
-            <textarea id="obs" rows="2" placeholder="Dublado, legendado, link off..."></textarea>
+            <label id="labelObs">Observação / Motivo:</label>
+            <textarea id="obs" rows="2" placeholder="Dublado, Temporada X, Link off..."></textarea>
         </div>
 
-        <button type="submit" id="btnEnviar">ENVIAR SOLICITAÇÃO</button>
-        
+        <button type="submit" id="btnEnviar">ENVIAR AGORA</button>
         <div id="status"></div>
     </form>
 </div>
 
 <div class="history-card">
-    <h3>Meus Pedidos Recentes</h3>
+    <h3>Histórico Local</h3>
     <div id="listaHistorico"></div>
 </div>
 
 <script>
-    // Configurações
     const TMDB_KEY = "fe9f67e134ddc97742f522aace9f85bb"; 
     const WEBHOOK_PEDIDOS = "https://discord.com/api/webhooks/1494100608146215062/9Jwv_VlY6ILjy-ZfOvWGY0R90SfPAGshm6zuA73QEH28IOSqYi0O_EyJmu1h_BnEnAIL";
     const WEBHOOK_CORRECOES = "https://discord.com/api/webhooks/1494102409935323278/BW8aSu33mUWlNA6t0IROx2ihy5Nrqy4UW6vYjfTMQYy_2D4Dg_AE3KKFU5f7rrSMGgfd";
-    
-    let moviePoster = ""; 
 
     const form = document.getElementById('formInove');
     const inputTitulo = document.getElementById('titulo');
     const divSugestoes = document.getElementById('sugestoes');
-    const status = document.getElementById('status');
-    const listaHistorico = document.getElementById('listaHistorico');
 
-    // Busca de Filmes/Séries no TMDB
+    // Busca sugestões no TMDB
     inputTitulo.addEventListener('input', async () => {
         const query = inputTitulo.value;
         const cat = document.getElementById('categoria').value;
-        
-        if (query.length < 3 || cat === "Canais 📺") {
-            divSugestoes.style.display = 'none';
-            return;
-        }
+        if (query.length < 3 || cat === "CANAIS") return divSugestoes.style.display = 'none';
 
-        const tipoBusca = cat.includes("Séries") ? "tv" : "movie";
+        const tipoBusca = cat === "SÉRIE" ? "tv" : "movie";
         const url = `https://api.themoviedb.org/3/search/${tipoBusca}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`;
 
         try {
             const res = await fetch(url);
             const data = await res.json();
-            
             divSugestoes.innerHTML = "";
-            if (data.results && data.results.length > 0) {
+            if (data.results?.length > 0) {
                 divSugestoes.style.display = 'block';
                 data.results.slice(0, 5).forEach(item => {
                     const nome = item.title || item.name;
-                    const ano = (item.release_date || item.first_air_date || "N/A").split("-")[0];
-                    const img = item.poster_path ? `https://image.tmdb.org/t/p/w92${item.poster_path}` : 'https://via.placeholder.com/92x138?text=N/A';
-                    
                     const div = document.createElement('div');
                     div.className = "sugestao-item";
-                    div.innerHTML = `<img src="${img}"><div><strong>${nome}</strong><br><small>${ano}</small></div>`;
+                    div.innerHTML = `<div><strong>${nome}</strong></div>`;
                     div.onclick = () => {
-                        inputTitulo.value = `${nome} (${ano})`;
-                        moviePoster = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : "";
+                        inputTitulo.value = nome;
                         divSugestoes.style.display = 'none';
                     };
                     divSugestoes.appendChild(div);
                 });
             }
-        } catch (e) { console.log("Erro na busca"); }
+        } catch (e) { }
     });
 
-    document.addEventListener('click', (e) => { if (e.target !== inputTitulo) divSugestoes.style.display = 'none'; });
-
-    // Função de Histórico Local
-    function carregarHistorico() {
-        const historico = JSON.parse(localStorage.getItem('historico_inove')) || [];
-        listaHistorico.innerHTML = "";
-        if (historico.length === 0) {
-            listaHistorico.innerHTML = "<p style='text-align:center; color:#555; font-size:12px;'>Nenhum pedido recente.</p>";
-            return;
-        }
-        historico.slice().reverse().forEach(item => {
-            const div = document.createElement('div');
-            div.className = "history-item";
-            div.innerHTML = `<span class="tag">${item.tipo}</span><br><span class="title">${item.tit}</span><small>${item.data}</small>`;
-            listaHistorico.appendChild(div);
-        });
-    }
-
-    // Envio do Formulário para o Webhook
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-
-        const tipo = document.getElementById('tipo').value;
-        const urlFinal = (tipo === "PEDIDO") ? WEBHOOK_PEDIDOS : WEBHOOK_CORRECOES;
+        const status = document.getElementById('status');
         const btn = document.getElementById('btnEnviar');
+        
+        const tipo = document.getElementById('tipo').value;
+        const categoria = document.getElementById('categoria').value;
+        const nome = inputTitulo.value;
+        const obs = document.getElementById('obs').value;
+        const rev = document.getElementById('revendedor').value;
 
         btn.disabled = true;
-        status.style.color = "#fff";
         status.innerText = "Enviando...";
 
-        const dados = {
-            tipo: tipo,
-            cat: document.getElementById('categoria').value,
-            rev: document.getElementById('revendedor').value,
-            tit: inputTitulo.value,
-            obs: document.getElementById('obs').value || "Sem observações.",
-            data: new Date().toLocaleString('pt-BR'),
-            poster: moviePoster
-        };
+        // MONTAGEM DA MENSAGEM EXATAMENTE COMO VOCÊ PEDIU
+        let mensagemFormatada = "";
 
-        const msgDiscord = {
-            username: `Inove | ${tipo}`,
-            embeds: [{
-                title: `NOVA SOLICITAÇÃO: ${dados.tit}`,
-                color: (tipo === "PEDIDO") ? 0x00FF00 : 0xFF0000,
-                thumbnail: { url: dados.poster },
-                fields: [
-                    { name: "👤 Revendedor", value: dados.rev, inline: true },
-                    { name: "📺 Categoria", value: dados.cat, inline: true },
-                    { name: "📝 OBS", value: dados.obs }
-                ],
-                footer: { text: `Enviado em: ${dados.data}` }
-            }]
-        };
+        if (tipo === "PEDIDO") {
+            if (categoria === "SÉRIE") {
+                mensagemFormatada = `*PEDIDO DE ADIÇÃO DE CONTEÚDO*\n\nCATEGORIA : SÉRIE\nNOME : ${nome}\nUSUÁRIO: ${rev}\nOBS: ${obs}`;
+            } else {
+                mensagemFormatada = `*PEDIDO DE ADIÇÃO DE CONTEÚDO*\n\nCATEGORIA : ${categoria}\nNOME : ${nome}\nUSUÁRIO: ${rev}\nOBS: ${obs}`;
+            }
+        } else {
+            // CORREÇÃO
+            if (categoria === "SÉRIE") {
+                mensagemFormatada = `*PEDIDO DE CORREÇÃO*\n\nCATEGORIA : SÉRIE\nNOME : ${nome}\nTEMPORADA: (Ver Obs)\nMOTIVO: ${obs}\nUSUÁRIO: ${rev}`;
+            } else {
+                mensagemFormatada = `*PEDIDO DE CORREÇÃO*\n\nCATEGORIA : ${categoria}\nNOME : ${nome}\nMOTIVO: ${obs}\nUSUÁRIO: ${rev}`;
+            }
+        }
+
+        const urlFinal = (tipo === "PEDIDO") ? WEBHOOK_PEDIDOS : WEBHOOK_CORRECOES;
 
         try {
-            await fetch(urlFinal, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(msgDiscord) });
-            
-            let hist = JSON.parse(localStorage.getItem('historico_inove')) || [];
-            hist.push(dados);
-            if(hist.length > 10) hist.shift();
-            localStorage.setItem('historico_inove', JSON.stringify(hist));
+            await fetch(urlFinal, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: mensagemFormatada })
+            });
 
             status.style.color = "#00ff00";
-            status.innerText = "✅ Solicitação enviada!";
+            status.innerText = "✅ Enviado com sucesso!";
+            
+            // Salva no histórico local
+            let hist = JSON.parse(localStorage.getItem('hist_inove')) || [];
+            hist.push({ txt: nome, date: new Date().toLocaleString() });
+            localStorage.setItem('hist_inove', JSON.stringify(hist.slice(-5)));
+            
             form.reset();
-            moviePoster = "";
-            carregarHistorico();
-        } catch (err) { 
+            renderHist();
+        } catch (err) {
             status.style.color = "#ff4444";
-            status.innerText = "❌ Erro ao enviar."; 
+            status.innerText = "❌ Erro ao enviar.";
         } finally {
             btn.disabled = false;
         }
     });
 
-    carregarHistorico();
+    function renderHist() {
+        const lista = document.getElementById('listaHistorico');
+        const hist = JSON.parse(localStorage.getItem('hist_inove')) || [];
+        lista.innerHTML = hist.map(i => `<div class="history-item"><strong>${i.txt}</strong><br><small>${i.date}</small></div>`).join('');
+    }
+    renderHist();
 </script>
 
 </body>
