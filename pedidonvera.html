@@ -277,16 +277,16 @@
         // Lógica de Mensagem: Usuário por último e com linha pulada (\n\n)
         if (tipo === "PEDIDO") {
             if (cat === "SÉRIE") {
-                mensagemFormatada = `*PEDIDO DE ADIÇÃO DE CONTEÚDO*\n\nCATEGORIA : SÉRIE\nNOME : ${nome}\nTEMPORADA: ${temporada || "Não informada"}\nOBS: ${obs || "Sem observações"}\n\nUSUÁRIO: ${rev}`;
+                mensagemFormatada = `*PEDIDO DE ADIÇÃO DE CONTEÚDO*\n\nCATEGORIA : SÉRIE\nNOME : ${nome}\nTEMPORADA: ${temporada || "Não informada"}\nOBS: ${obs || "Sem observações"}\n\nUSUÁRIO QUE PEDIU: ${rev}`;
             } else {
-                mensagemFormatada = `*PEDIDO DE ADIÇÃO DE CONTEÚDO*\n\nCATEGORIA : ${cat}\nNOME : ${nome}\nOBS: ${obs || "Sem observações"}\n\nUSUÁRIO: ${rev}`;
+                mensagemFormatada = `*PEDIDO DE ADIÇÃO DE CONTEÚDO*\n\nCATEGORIA : ${cat}\nNOME : ${nome}\nOBS: ${obs || "Sem observações"}\n\nUSUÁRIO QUE PEDIU: ${rev}`;
             }
         } else {
             // CORREÇÃO
             if (cat === "SÉRIE") {
-                mensagemFormatada = `*PEDIDO DE CORREÇÃO*\n\nCATEGORIA : SÉRIE\nNOME : ${nome}\nTEMPORADA: ${temporada || "Não informada"}\nMOTIVO: ${obs || "Sem observações"}\n\nUSUÁRIO: ${rev}`;
+                mensagemFormatada = `*PEDIDO DE CORREÇÃO*\n\nCATEGORIA : SÉRIE\nNOME : ${nome}\nTEMPORADA: ${temporada || "Não informada"}\nMOTIVO: ${obs || "Sem observações"}\n\nUSUÁRIO QUE PEDIU: ${rev}`;
             } else {
-                mensagemFormatada = `*PEDIDO DE CORREÇÃO*\n\nCATEGORIA : ${cat}\nNOME : ${nome}\nMOTIVO: ${obs || "Sem observações"}\n\nUSUÁRIO: ${rev}`;
+                mensagemFormatada = `*PEDIDO DE CORREÇÃO*\n\nCATEGORIA : ${cat}\nNOME : ${nome}\nMOTIVO: ${obs || "Sem observações"}\n\nUSUÁRIO QUE PEDIU: ${rev}`;
             }
         }
 
