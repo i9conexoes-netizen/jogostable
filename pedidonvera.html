@@ -72,7 +72,6 @@
 
         input:focus, textarea:focus, select:focus { border-color: #e50914; }
 
-        /* Estilo das Sugestões com Capa */
         #sugestoes {
             position: absolute;
             width: 100%;
@@ -203,6 +202,8 @@
     const divSugestoes = document.getElementById('sugestoes');
     const categoriaSelect = document.getElementById('categoria');
 
+    let capaSelecionada = ""; // Variável global para armazenar a URL da imagem
+
     function toggleTemporada() {
         const campoTemp = document.getElementById('campoTemporada');
         campoTemp.style.display = (categoriaSelect.value === "SÉRIE") ? "block" : "none";
@@ -230,14 +231,15 @@
                 data.results.slice(0, 5).forEach(item => {
                     const nome = item.title || item.name;
                     const ano = (item.release_date || item.first_air_date || "").split("-")[0];
-                    const poster = item.poster_path 
-                        ? `https://image.tmdb.org/t/p/w92${item.poster_path}` 
+                    const posterPath = item.poster_path;
+                    const posterUrl = posterPath 
+                        ? `https://image.tmdb.org/t/p/w92${posterPath}` 
                         : 'https://via.placeholder.com/92x138?text=Sem+Foto';
 
                     const div = document.createElement('div');
                     div.className = "sugestao-item";
                     div.innerHTML = `
-                        <img src="${poster}">
+                        <img src="${posterUrl}">
                         <div class="sugestao-info">
                             <span class="sugestao-nome">${nome}</span>
                             <span class="sugestao-ano">${ano}</span>
@@ -245,6 +247,8 @@
                     `;
                     div.onclick = () => {
                         inputTitulo.value = nome;
+                        // Salva a versão de alta qualidade para o Discord
+                        capaSelecionada = posterPath ? `https://image.tmdb.org/t/p/w500${posterPath}` : "";
                         divSugestoes.style.display = 'none';
                     };
                     divSugestoes.appendChild(div);
@@ -274,7 +278,6 @@
 
         let mensagemFormatada = "";
 
-        // Lógica de Mensagem: Usuário por último e com linha pulada (\n\n)
         if (tipo === "PEDIDO") {
             if (cat === "SÉRIE") {
                 mensagemFormatada = `*PEDIDO DE ADIÇÃO DE CONTEÚDO*\n\nCATEGORIA : SÉRIE\nNOME : ${nome}\nTEMPORADA: ${temporada || "Não informada"}\nOBS: ${obs || "Sem observações"}\n\nUSUÁRIO QUE PEDIU: ${rev}`;
@@ -282,7 +285,6 @@
                 mensagemFormatada = `*PEDIDO DE ADIÇÃO DE CONTEÚDO*\n\nCATEGORIA : ${cat}\nNOME : ${nome}\nOBS: ${obs || "Sem observações"}\n\nUSUÁRIO QUE PEDIU: ${rev}`;
             }
         } else {
-            // CORREÇÃO
             if (cat === "SÉRIE") {
                 mensagemFormatada = `*PEDIDO DE CORREÇÃO*\n\nCATEGORIA : SÉRIE\nNOME : ${nome}\nTEMPORADA: ${temporada || "Não informada"}\nMOTIVO: ${obs || "Sem observações"}\n\nUSUÁRIO QUE PEDIU: ${rev}`;
             } else {
@@ -292,11 +294,19 @@
 
         const urlFinal = (tipo === "PEDIDO") ? WEBHOOK_PEDIDOS : WEBHOOK_CORRECOES;
 
+        // Montagem do payload com imagem (embed)
+        const payload = {
+            content: mensagemFormatada,
+            embeds: capaSelecionada ? [{
+                image: { url: capaSelecionada }
+            }] : []
+        };
+
         try {
             await fetch(urlFinal, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: mensagemFormatada })
+                body: JSON.stringify(payload)
             });
 
             status.style.color = "#00ff00";
@@ -307,6 +317,7 @@
             localStorage.setItem('hist_inove', JSON.stringify(hist.slice(-8)));
             
             form.reset();
+            capaSelecionada = ""; // Limpa a capa após o envio
             toggleTemporada();
             renderHist();
         } catch (err) {
