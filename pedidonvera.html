@@ -202,6 +202,7 @@
 </div>
 
 <script>
+    // Configurações
     const TMDB_KEY = "fe9f67e134ddc97742f522aace9f85bb"; 
     const WEBHOOK_PEDIDOS = "https://discord.com/api/webhooks/1494100608146215062/9Jwv_VlY6ILjy-ZfOvWGY0R90SfPAGshm6zuA73QEH28IOSqYi0O_EyJmu1h_BnEnAIL";
     const WEBHOOK_CORRECOES = "https://discord.com/api/webhooks/1494102409935323278/BW8aSu33mUWlNA6t0IROx2ihy5Nrqy4UW6vYjfTMQYy_2D4Dg_AE3KKFU5f7rrSMGgfd";
@@ -214,6 +215,7 @@
     const status = document.getElementById('status');
     const listaHistorico = document.getElementById('listaHistorico');
 
+    // Busca de Filmes/Séries no TMDB
     inputTitulo.addEventListener('input', async () => {
         const query = inputTitulo.value;
         const cat = document.getElementById('categoria').value;
@@ -254,6 +256,7 @@
 
     document.addEventListener('click', (e) => { if (e.target !== inputTitulo) divSugestoes.style.display = 'none'; });
 
+    // Função de Histórico Local
     function carregarHistorico() {
         const historico = JSON.parse(localStorage.getItem('historico_inove')) || [];
         listaHistorico.innerHTML = "";
@@ -269,6 +272,7 @@
         });
     }
 
+    // Envio do Formulário para o Webhook
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
