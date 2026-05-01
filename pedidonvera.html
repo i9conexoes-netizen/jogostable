@@ -133,7 +133,7 @@
             font-size: 13px;
         }
 
-        #campoTemporada { display: none; } /* Escondido por padrão */
+        #campoTemporada { display: none; }
 
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #e50914; border-radius: 10px; }
@@ -173,7 +173,6 @@
             <div id="sugestoes"></div>
         </div>
 
-        <!-- Campo Temporada que só aparece em Séries -->
         <div class="form-group" id="campoTemporada">
             <label>Temporada:</label>
             <input type="text" id="temporada" placeholder="Ex: 1, 2 ou Todas">
@@ -204,18 +203,12 @@
     const divSugestoes = document.getElementById('sugestoes');
     const categoriaSelect = document.getElementById('categoria');
 
-    // Mostra/Esconde campo de Temporada
     function toggleTemporada() {
         const campoTemp = document.getElementById('campoTemporada');
-        if (categoriaSelect.value === "SÉRIE") {
-            campoTemp.style.display = "block";
-        } else {
-            campoTemp.style.display = "none";
-            document.getElementById('temporada').value = "";
-        }
+        campoTemp.style.display = (categoriaSelect.value === "SÉRIE") ? "block" : "none";
+        if (categoriaSelect.value !== "SÉRIE") document.getElementById('temporada').value = "";
     }
 
-    // Busca sugestões com CAPA no TMDB
     inputTitulo.addEventListener('input', async () => {
         const query = inputTitulo.value;
         const cat = categoriaSelect.value;
@@ -232,7 +225,7 @@
             const data = await res.json();
             divSugestoes.innerHTML = "";
             
-            if (data.results && data.results.length > 0) {
+            if (data.results?.length > 0) {
                 divSugestoes.style.display = 'block';
                 data.results.slice(0, 5).forEach(item => {
                     const nome = item.title || item.name;
@@ -257,15 +250,13 @@
                     divSugestoes.appendChild(div);
                 });
             }
-        } catch (e) { console.log("Erro na busca"); }
+        } catch (e) { }
     });
 
-    // Fecha sugestões ao clicar fora
     document.addEventListener('click', (e) => {
         if (e.target !== inputTitulo) divSugestoes.style.display = 'none';
     });
 
-    // Envio do formulário
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const status = document.getElementById('status');
@@ -279,23 +270,23 @@
         const rev = document.getElementById('revendedor').value;
 
         btn.disabled = true;
-        status.innerText = "Enviando para o Discord...";
+        status.innerText = "Enviando...";
 
         let mensagemFormatada = "";
 
-        // Formatação da Mensagem conforme solicitado
+        // Lógica de Mensagem: Usuário por último e com linha pulada (\n\n)
         if (tipo === "PEDIDO") {
             if (cat === "SÉRIE") {
-                mensagemFormatada = `*PEDIDO DE ADIÇÃO DE CONTEÚDO*\n\nCATEGORIA : SÉRIE\nNOME : ${nome}\nTEMPORADA: ${temporada || "Não informada"}\nUSUÁRIO: ${rev}\nOBS: ${obs}`;
+                mensagemFormatada = `*PEDIDO DE ADIÇÃO DE CONTEÚDO*\n\nCATEGORIA : SÉRIE\nNOME : ${nome}\nTEMPORADA: ${temporada || "Não informada"}\nOBS: ${obs || "Sem observações"}\n\nUSUÁRIO: ${rev}`;
             } else {
-                mensagemFormatada = `*PEDIDO DE ADIÇÃO DE CONTEÚDO*\n\nCATEGORIA : ${cat}\nNOME : ${nome}\nUSUÁRIO: ${rev}\nOBS: ${obs}`;
+                mensagemFormatada = `*PEDIDO DE ADIÇÃO DE CONTEÚDO*\n\nCATEGORIA : ${cat}\nNOME : ${nome}\nOBS: ${obs || "Sem observações"}\n\nUSUÁRIO: ${rev}`;
             }
         } else {
             // CORREÇÃO
             if (cat === "SÉRIE") {
-                mensagemFormatada = `*PEDIDO DE CORREÇÃO*\n\nCATEGORIA : SÉRIE\nNOME : ${nome}\nTEMPORADA: ${temporada || "Não informada"}\nMOTIVO: ${obs}\nUSUÁRIO: ${rev}`;
+                mensagemFormatada = `*PEDIDO DE CORREÇÃO*\n\nCATEGORIA : SÉRIE\nNOME : ${nome}\nTEMPORADA: ${temporada || "Não informada"}\nMOTIVO: ${obs || "Sem observações"}\n\nUSUÁRIO: ${rev}`;
             } else {
-                mensagemFormatada = `*PEDIDO DE CORREÇÃO*\n\nCATEGORIA : ${cat}\nNOME : ${nome}\nMOTIVO: ${obs}\nUSUÁRIO: ${rev}`;
+                mensagemFormatada = `*PEDIDO DE CORREÇÃO*\n\nCATEGORIA : ${cat}\nNOME : ${nome}\nMOTIVO: ${obs || "Sem observações"}\n\nUSUÁRIO: ${rev}`;
             }
         }
 
@@ -311,7 +302,6 @@
             status.style.color = "#00ff00";
             status.innerText = "✅ Solicitação enviada!";
             
-            // Histórico local
             let hist = JSON.parse(localStorage.getItem('hist_inove')) || [];
             hist.push({ txt: nome, tipo: tipo, date: new Date().toLocaleString() });
             localStorage.setItem('hist_inove', JSON.stringify(hist.slice(-8)));
@@ -321,7 +311,7 @@
             renderHist();
         } catch (err) {
             status.style.color = "#ff4444";
-            status.innerText = "❌ Erro ao conectar com o servidor.";
+            status.innerText = "❌ Erro ao enviar.";
         } finally {
             btn.disabled = false;
         }
